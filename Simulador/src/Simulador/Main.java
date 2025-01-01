@@ -2,18 +2,20 @@ package Simulador;
 
 public class Main {
     public static void main(String[] args) {
-        // Inicializando memória e registradores
-        Memory memory = new Memory(32768); // Memória SIC padrão
         Registers registers = new Registers();
+		// Testando os registradores
+        // Definir valores nos registradores padrão
+        registers.setRegister("A", 0x123456);
+        registers.setRegister("X", 0x654321);
+        registers.setRegister("PC", 0xABCD);
 
-        // Teste: Escrevendo e lendo da memória
-        memory.writeWord(0, 0x123456); // Escreve a palavra 0x123456 na memória
-        int word = memory.readWord(0); // Lê a palavra da posição 0
-        System.out.println("Palavra lida da memória: " + Integer.toHexString(word));
+        // Definir valor no registrador F (48 bits)
+        registers.setRegisterF(0x123456789ABCL); // Adicionado "L" para indicar long
 
-        // Teste: Manipulando registradores
-        registers.setRegister("A", 42); // Define o valor do registrador A
-        int regAValue = registers.getRegister("A"); // Obtém o valor do registrador A
-        System.out.println("Valor do registrador A: " + regAValue);
+        // Imprimir os valores dos registradores
+        registers.printRegisters();
+        
+        //Testando memoria
+
     }
 }
