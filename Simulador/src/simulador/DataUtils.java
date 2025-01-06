@@ -1,4 +1,4 @@
-package Simulador;
+package simulador;
 // Auxiliar para manupular dados
 // Da para tentar implementar diretamento no código principal
 public class DataUtils {

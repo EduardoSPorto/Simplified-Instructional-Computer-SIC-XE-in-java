@@ -1,12 +1,18 @@
-package Simulador;
+package simulador;
+
+import simulador.instrucao.UserInstruction;
 
 public class Memory {
     private byte[] memory;
+    private int size;
 
     public Memory(int size) {
         if (size > 1024 * 1024) { // Inicializa até 1MB
             throw new IllegalArgumentException("Memoria maior que 1 mb.");
+        } else if (size < 1024) {
+        	throw new IllegalArgumentException("Memória menor que 1 Kb.");
         }
+        this.size = size;
         memory = new byte[size];
     }
 
@@ -29,5 +35,14 @@ public class Memory {
         memory[address] = (byte) ((value >> 16) & 0xFF);
         memory[address + 1] = (byte) ((value >> 8) & 0xFF);
         memory[address + 2] = (byte) (value & 0xFF);
+    }
+    
+    public int getMemorySize () {
+    	return this.size;
+    }
+    
+    // Escrita de instruções
+    public void writeInstruction (int adress, UserInstruction MLInstruction, int format) {
+    	
     }
 }
