@@ -35,6 +35,50 @@ public class UserInstruction {
 		this.instruction = this.instruction | reg1 | reg2;
 	}
 	
+	// Define o tipo de endereçamento
+	public void setAsDirect (int format) {
+		switch (format) {
+			case 3:
+				this.instruction = this.instruction | 0b110000000000000000;
+				break;
+			case 4:
+				this.instruction = this.instruction | 0b11000000000000000000000000;
+				break;
+			default:
+				throw new IllegalArgumentException("Formato do tipo" + format + " Inexistente!");
+		}
+	}
+	
+	public void setAsIndirect (int format) {
+		switch (format) {
+			case 3:
+				this.instruction = this.instruction | 0b100000000000000000;
+				break;
+			case 4:
+				this.instruction = this.instruction | 0b10000000000000000000000000;
+				break;
+			default:
+				throw new IllegalArgumentException("Formato do tipo" + format + " Inexistente!");
+		}
+	}
+	
+	public void setAsImmediate (int format) {
+		switch (format) {
+			case 3:
+				this.instruction = this.instruction | 0b010000000000000000;
+				break;
+			case 4:
+				this.instruction = this.instruction | 0b01000000000000000000000000;
+				break;
+			default:
+				throw new IllegalArgumentException("Formato do tipo" + format + " Inexistente!");
+		}
+	}
+	
+	
+	// Definição das Flags
+	
+	// Flag X -> Relativo ao registrador X
 	public void setFlagX (int format) {
 		switch (format) {
 			case 3:
@@ -48,6 +92,7 @@ public class UserInstruction {
 		}
 	}
 	
+	// Flag B -> Relativo ao registrador Base
 	public void setFlagB (int format) {
 		switch (format) {
 		case 3:
@@ -61,6 +106,7 @@ public class UserInstruction {
 		}
 	}
 	
+	// Flag P -> Relativo ao Program Counter
 	public void setFlagP (int format) {
 		switch (format) {
 		case 3:
@@ -74,6 +120,17 @@ public class UserInstruction {
 		}
 	}
 	
+	public void setDisp (int disp) {
+		disp = disp & 0xFFF;
+		this.instruction = this.instruction | disp;
+	}
+	
+	public void setAddress (int address) {
+		address = address & 0xFFFFF;
+		this.instruction = this.instruction | address;
+	}
+	
+	// Flag e -> Formato extendido
 	public void setFlagE (int format) {
 		switch (format) {
 		case 3:
@@ -106,6 +163,16 @@ public class UserInstruction {
 				return opcode;
 		}
 		return -1;
+	}
+	
+	public int getInstruction () {
+		return this.instruction;
+	}
+	
+	
+	@Override
+	public String toString() {
+		return "Instrução: " + Integer.toBinaryString(instruction);
 	}
 	
 

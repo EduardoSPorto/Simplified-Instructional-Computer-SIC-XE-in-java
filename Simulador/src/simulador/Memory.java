@@ -42,7 +42,37 @@ public class Memory {
     }
     
     // Escrita de instruções
-    public void writeInstruction (int adress, UserInstruction MLInstruction, int format) {
+    public void writeInstruction (int address, int value, int format) {
+    	if (address < 0 || address + 2 >= memory.length) {
+            throw new IndexOutOfBoundsException("Endereco invalido");
+        }
+    	if (format != 4) {
+    		memory[address] = (byte) ((value >> 16) & 0xFF);
+            memory[address + 1] = (byte) ((value >> 8) & 0xFF);
+            memory[address + 2] = (byte) (value & 0xFF);
+    	}
+    	else
+    		memory[address] = (byte) ((value >> 16) & 0xFF);
+        	memory[address + 1] = (byte) ((value >> 8) & 0xFF);
+        	memory[address + 2] = (byte) (value & 0xFF);
+        	
+        	memory[address + 3] = (byte) ((value >> 16) & 0xFF);
+        	memory[address + 4] = 0;
+        	memory[address + 5] = 0;
+    }
+    
+    // Leitura de instruções
+    public int readInstruction (int address,int format) {
+    	if (format != 4) {
+    		 if (address < 0 || address + 2 >= memory.length) {
+    	            throw new IndexOutOfBoundsException("Endereço inválido.");
+    	        }
+	        return ((memory[address] & 0xFF) << 16) | ((memory[address + 1] & 0xFF) << 8) | (memory[address + 2] & 0xFF);
+    	}
     	
+    	if (address < 0 || address + 5 >= memory.length) {
+    		throw new IndexOutOfBoundsException("Endereço inválido.");
+    	}
+    	return ((memory[address] & 0xFF) << 24) | ((memory[address + 1] & 0xFF) << 16) | ((memory[address + 2] & 0xFF) << 8) | (memory[address + 3] & 0xFF);
     }
 }

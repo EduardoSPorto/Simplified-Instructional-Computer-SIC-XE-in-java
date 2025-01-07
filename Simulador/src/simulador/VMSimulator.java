@@ -60,24 +60,49 @@ public class VMSimulator {
 					String tempFormat = info.get(opcode);
 					int format;
 					
+					// Converte para inteiro e identifica o tipo 4 (importante para flag extended)
 					if (tempFormat == "3/4") 
-						format = (Integer.parseInt(mnemonicInstruction[1]) < 16777215) ? 3 : 4;
+						format = (toInteger(mnemonicInstruction[1]) < 16777215) ? 3 : 4;
 					else
 						format = Integer.parseInt(tempFormat);
 					
 //					// Forma a instrução a ser armazenada
+					// Machine Language Instruction
 					UserInstruction MLInstruction = new UserInstruction(format); 
 					switch (format) {
 						case 1:
-							memory.writeInstruction(memoryPointer, MLInstruction, format);
+							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
 							break;
-						case 2:
-							MLInstruction.setOpcode(opcode, 2);
-							MLInstruction.setRegisters(Integer.parseInt(mnemonicInstruction[1]), Integer.parseInt(mnemonicInstruction[2]));
-							memory.writeWord(memoryPointer, 2);
 							
+						case 2:
+							MLInstruction.setOpcode(opcode, format);
+							MLInstruction.setRegisters(Integer.parseInt(mnemonicInstruction[1]), Integer.parseInt(mnemonicInstruction[2]));
+							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
+							
+						case 3: // A partir de 3 Bytes fica mais complicado por que tem mais flags
+							MLInstruction.setOpcode(opcode, format);
+							FlagSetter(mnemonicInstruction[1], format, MLInstruction);
+							
+							int dispValue = toInteger (mnemonicInstruction[1]);
+							MLInstruction.setDisp(dispValue);
+							
+							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
+							break;
+							
+						case 4:
+							MLInstruction.setOpcode(opcode, format);
+							FlagSetter(mnemonicInstruction[1], format, MLInstruction);
+							MLInstruction.setFlagE(format);
+							
+							int addressValue = Integer.parseInt (mnemonicInstruction[1].split(",")[0]);
+							MLInstruction.setAddress(addressValue);
+							
+							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
+							memoryPointer+=3;
+							break;
 					}
 					memoryPointer+=3;
+					System.out.println(MLInstruction);
 				}
 			}
 		}
@@ -106,4 +131,69 @@ public class VMSimulator {
 		
 		return input;
 	}
+	
+	public void FlagSetter (String mnemonicInstruction, int format, UserInstruction MLInstruction) {
+		String mnemonicAddress = mnemonicInstruction;
+		
+		
+		// Define o tipo de endereçamento
+		if (Character.isDigit(mnemonicAddress.charAt(0)))
+			MLInstruction.setAsDirect(format);
+		else {
+			if (mnemonicAddress.charAt(0) == '@')
+				MLInstruction.setAsIndirect(format);
+			else if (mnemonicAddress.charAt(0) == '#')
+				MLInstruction.setAsImmediate(format);
+		}
+		
+		// Define os bits de endereçamento relativos a registrador X, pc, base, ou absoluto
+		String complement = "";
+		if (mnemonicAddress.contains(",")) {
+		    complement = mnemonicAddress.split(",")[1];
+		} else {
+		    complement = mnemonicAddress; // Ou qualquer outro comportamento que você queira
+		}
+		switch (complement) {
+			case "X":
+				MLInstruction.setFlagX(format);
+				break;
+			case "PC":
+				MLInstruction.setFlagP(format);
+				break;
+			case "B":
+				MLInstruction.setFlagB(format);
+		}
+	}
+	
+	// Converte para Inteiro a entrada
+	// Funciona tanto com Decimal quanto com Hexadecimal
+	public int toInteger (String strValue) {
+		strValue = strValue.split(",")[0];
+		if (strValue.contains("0x"))
+			return Integer.parseInt(strValue.substring(2));
+		return Integer.parseInt(strValue);
+	}
 }
+
+	
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ * Na falta de criatividade, defini os flags x, b, p como era no Mips
+ * INST val, X  -> Relativo ao registrador X
+ * INST val, B  -> Relativo ao registrador Base
+ * INST val, PC -> Relativo ao Program Counter
+ * INST val     -> Endereço Absoluto
+ * 
+ * */
