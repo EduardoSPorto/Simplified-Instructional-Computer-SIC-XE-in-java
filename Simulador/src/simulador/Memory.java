@@ -42,23 +42,24 @@ public class Memory {
     }
     
     // Escrita de instruções
-    public void writeInstruction (int address, int value, int format) {
+    public void writeInstruction (int address, byte[] instruction, int format) {
     	if (address < 0 || address + 2 >= memory.length) {
             throw new IndexOutOfBoundsException("Endereco invalido");
         }
     	if (format != 4) {
-    		memory[address] = (byte) ((value >> 16) & 0xFF);
-            memory[address + 1] = (byte) ((value >> 8) & 0xFF);
-            memory[address + 2] = (byte) (value & 0xFF);
+    		memory[address] = instruction [0];
+            memory[address + 1] = instruction [1];
+            memory[address + 2] = instruction [2];
     	}
-    	else
-    		memory[address] = (byte) ((value >> 16) & 0xFF);
-        	memory[address + 1] = (byte) ((value >> 8) & 0xFF);
-        	memory[address + 2] = (byte) (value & 0xFF);
+    	else {
+    		memory[address] = instruction [0];
+        	memory[address + 1] = instruction [1];
+        	memory[address + 2] = instruction [2];
         	
-        	memory[address + 3] = (byte) ((value >> 16) & 0xFF);
+        	memory[address + 3] = instruction [3];
         	memory[address + 4] = 0;
         	memory[address + 5] = 0;
+    	}
     }
     
     // Leitura de instruções

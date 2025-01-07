@@ -52,61 +52,55 @@ public class VMSimulator {
 			// Separa entre a operação e os complementos
 			String [] mnemonicInstruction = lines[i].split(" ");
 			
-			for (int j = 0; j < mnemonicInstruction.length; j++) {
-				
-				if (j == 0) {	
-					Map<Integer, String> info = VMInstructions.getInfo(mnemonicInstruction[0]);
-					int opcode = (int) info.keySet().toArray()[0];
-					String tempFormat = info.get(opcode);
-					int format;
+			// Separa o mnemonico em operação e operando
+			Map<Integer, String> info = VMInstructions.getInfo(mnemonicInstruction[0]);
+			int opcode = (int) info.keySet().toArray()[0];
+			String strFormat = info.get(opcode);
+			int integerFormat;
+			
+			// Converte para inteiro e identifica o tipo 4 (importante para flag extended)
+			if (strFormat == "3/4") 
+				integerFormat = (toInteger(mnemonicInstruction[1]) < 4095) ? 3 : 4;
+			else
+				integerFormat = Integer.parseInt(strFormat);
+			
+			// Forma a instrução a ser armazenada
+			UserInstruction MLInstruction = new UserInstruction(integerFormat); // Machine Language Instruction
+			MLInstruction.setOpcode(opcode);
+
+			switch (integerFormat) {
+				case 1:
+					break;
 					
-					// Converte para inteiro e identifica o tipo 4 (importante para flag extended)
-					if (tempFormat == "3/4") 
-						format = (toInteger(mnemonicInstruction[1]) < 16777215) ? 3 : 4;
-					else
-						format = Integer.parseInt(tempFormat);
+				case 2:
+					MLInstruction.setRegisters(Integer.parseInt(mnemonicInstruction[1]), Integer.parseInt(mnemonicInstruction[2]));
+					break;
 					
-//					// Forma a instrução a ser armazenada
-					// Machine Language Instruction
-					UserInstruction MLInstruction = new UserInstruction(format); 
-					switch (format) {
-						case 1:
-							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
-							break;
-							
-						case 2:
-							MLInstruction.setOpcode(opcode, format);
-							MLInstruction.setRegisters(Integer.parseInt(mnemonicInstruction[1]), Integer.parseInt(mnemonicInstruction[2]));
-							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
-							
-						case 3: // A partir de 3 Bytes fica mais complicado por que tem mais flags
-							MLInstruction.setOpcode(opcode, format);
-							FlagSetter(mnemonicInstruction[1], format, MLInstruction);
-							
-							int dispValue = toInteger (mnemonicInstruction[1]);
-							MLInstruction.setDisp(dispValue);
-							
-							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
-							break;
-							
-						case 4:
-							MLInstruction.setOpcode(opcode, format);
-							FlagSetter(mnemonicInstruction[1], format, MLInstruction);
-							MLInstruction.setFlagE(format);
-							
-							int addressValue = Integer.parseInt (mnemonicInstruction[1].split(",")[0]);
-							MLInstruction.setAddress(addressValue);
-							
-							memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), format);
-							memoryPointer+=3;
-							break;
-					}
-					memoryPointer+=3;
-					System.out.println(MLInstruction);
-				}
+				case 3: // A partir de 3 Bytes fica mais complicado por que tem mais flags
+					FlagSetter(mnemonicInstruction[1], integerFormat, MLInstruction);
+					
+					int dispValue = toInteger (mnemonicInstruction[1]);
+					MLInstruction.setDisp(dispValue);
+					break;
+					
+				case 4:
+					FlagSetter(mnemonicInstruction[1], integerFormat, MLInstruction);
+					MLInstruction.setFlagE();
+					
+					int addressValue = toInteger (mnemonicInstruction[1]);
+					MLInstruction.setAddress(addressValue);
+					break;
 			}
-		}
-		
+			
+			memory.writeInstruction(memoryPointer, MLInstruction.getInstruction(), integerFormat);
+			if (integerFormat!= 4)
+				memoryPointer += 3;
+			else
+				memoryPointer += 6;
+			
+			System.out.println(MLInstruction);
+
+		}	
 	}
 	
 	
@@ -138,12 +132,12 @@ public class VMSimulator {
 		
 		// Define o tipo de endereçamento
 		if (Character.isDigit(mnemonicAddress.charAt(0)))
-			MLInstruction.setAsDirect(format);
+			MLInstruction.setAsDirect();
 		else {
 			if (mnemonicAddress.charAt(0) == '@')
-				MLInstruction.setAsIndirect(format);
+				MLInstruction.setAsIndirect();
 			else if (mnemonicAddress.charAt(0) == '#')
-				MLInstruction.setAsImmediate(format);
+				MLInstruction.setAsImmediate();
 		}
 		
 		// Define os bits de endereçamento relativos a registrador X, pc, base, ou absoluto
@@ -155,13 +149,13 @@ public class VMSimulator {
 		}
 		switch (complement) {
 			case "X":
-				MLInstruction.setFlagX(format);
+				MLInstruction.setFlagX();
 				break;
 			case "PC":
-				MLInstruction.setFlagP(format);
+				MLInstruction.setFlagP();
 				break;
 			case "B":
-				MLInstruction.setFlagB(format);
+				MLInstruction.setFlagB();
 		}
 	}
 	
@@ -170,7 +164,7 @@ public class VMSimulator {
 	public int toInteger (String strValue) {
 		strValue = strValue.split(",")[0];
 		if (strValue.contains("0x"))
-			return Integer.parseInt(strValue.substring(2));
+			return Integer.parseUnsignedInt(strValue.substring(2), 16);
 		return Integer.parseInt(strValue);
 	}
 }
