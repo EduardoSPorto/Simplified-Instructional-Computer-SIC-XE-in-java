@@ -8,6 +8,7 @@ public class InstructionSet {
 
 	ArrayList <VMInstruction> instructionSet;
 	Operations VMOperations;
+	int size;
 	
 	public InstructionSet () {
 		instructionSet = new ArrayList<>();
@@ -50,13 +51,15 @@ public class InstructionSet {
 		instructionSet.add(new VMInstruction("SUBR", 0x94, "2", VMOperations::SUBR));
 		instructionSet.add(new VMInstruction("TIX", 0x2C, "3/4", VMOperations::TIX));
 		instructionSet.add(new VMInstruction("TIXR", 0xB8, "2", VMOperations::TIXR));	
+		
+		this.size = instructionSet.size();
 	}
 	
 //	Retorna uma tupla simples (opcode, formato)
 	public Map <Integer, String> getInfo (String mnemonic){
 		Map <Integer, String> info = new HashMap<>();
 		
-		for (int i = 0; i < instructionSet.size(); i++) {
+		for (int i = 0; i < size; i++) {
 			VMInstruction instruction = instructionSet.get(i);
 			if (instruction.getMnemonic().equals(mnemonic)) {
 				info.put(instruction.getOpcode(), instruction.getFormat());
@@ -64,6 +67,15 @@ public class InstructionSet {
 			}
 		}
 		return info;
+	}
+	
+	public String getFormat(int opcode) {
+		for (int i = 0; i < size; i ++) {
+			VMInstruction instruction = instructionSet.get(i);
+			if (instruction.getOpcode() == opcode)
+				return instruction.getFormat();
+		}
+		return "";
 	}
 	
 //	Executa qualquer uma das intruções através do Opcode

@@ -9,6 +9,13 @@ public class UserInstruction {
 		this.format = format;
 		this.instruction = new byte [format];
 	}
+	
+	public UserInstruction (byte [] instruction) {
+		this.format = instruction.length;
+		this.instruction = new byte [this.format];
+		for (int i = 0; i < format; i++)
+			this.instruction[i] = instruction[i];
+	}
 
 	public void setOpcode (int opcode) { 
 		this.instruction[0] = (byte) opcode;
@@ -56,6 +63,7 @@ public class UserInstruction {
 	}
 		
 	
+	
 	// Endereço para formato 3 bytes
 	public void setDisp (int disp) {
 		this.instruction[1] |= ((disp >> 8) & 0xF);
@@ -70,7 +78,7 @@ public class UserInstruction {
 	
 	
 	
-	
+	// Métodos Getter
 	public int getOpcode (){
 		if (this.format != 3 || this.format != 4)
 			return (int) this.instruction[0];
@@ -81,7 +89,7 @@ public class UserInstruction {
 		return this.instruction;
 	}
 	
-	
+	// Métodos de conversão
 	@Override
 	public String toString() {
 		return "Instrução: " + String.format("%32s", Integer.toBinaryString(this.toInteger())).replace(' ', '0');
@@ -92,11 +100,8 @@ public class UserInstruction {
 		for (byte b : this.instruction) {
 			integerValue = (integerValue<< 8) | (b & 0xFF);
 		}
-		return integerValue;
-		
+		return integerValue;	
 	}
-	
-
 }
 
 
