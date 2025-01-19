@@ -1,15 +1,16 @@
 package simulador.instrucao;
 
+import java.util.function.Consumer;
 
 public class VMInstruction {
 
 	private int opcode;
 	private String mnemonic;
 	private String format; // Num bytes 1 2 3/4
-	private Runnable operation;
+	private Consumer<UserInstruction> operation;
 	
 		
-	public VMInstruction (String mnemonic, int opcode, String format, Runnable operation) {
+	public VMInstruction (String mnemonic, int opcode, String format, Consumer<UserInstruction> operation) {
 		this.mnemonic = mnemonic;
 		this.opcode = opcode;
 		this.format = format;
@@ -29,8 +30,8 @@ public class VMInstruction {
 		return format;
 	}
 
-	public void execute () {
-		this.operation.run();
+	public void execute (UserInstruction instruction) {
+		operation.accept(instruction);
 	}
 	
 }

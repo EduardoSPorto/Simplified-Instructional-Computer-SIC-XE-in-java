@@ -4,15 +4,19 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import simulador.Memory;
+import simulador.Registers;
+import simulador.VMSimulator;
+
 public class InstructionSet {
 
 	ArrayList <VMInstruction> instructionSet;
 	Operations VMOperations;
 	int size;
 	
-	public InstructionSet () {
+	public InstructionSet (Operations operations) {
+		VMOperations = operations;
 		instructionSet = new ArrayList<>();
-		VMOperations = new Operations();
 		instructionSet.add(new VMInstruction("ADD", 0x18, "3/4", VMOperations::ADD));
 		instructionSet.add(new VMInstruction("ADDR", 0x90, "2", VMOperations::ADDR));
 		instructionSet.add(new VMInstruction("AND", 0x40, "3/4", VMOperations::AND));
@@ -80,11 +84,14 @@ public class InstructionSet {
 	
 //	Executa qualquer uma das intruções através do Opcode
 //	As instruções não tem parâmetros pq são definidas pelo contexto da máquina, cada instruçã deve interpretar o contexto.
-	public void execute (int opcode) {
+	public void execute (UserInstruction currentInstruction) {
+		int opcode = currentInstruction.getOpcode();
 		for (int i = 0; i < instructionSet.size(); i ++) {
 			VMInstruction instruction = instructionSet.get(i);
-			if (instruction.getOpcode() == opcode)
-				instruction.execute();
+			if (instruction.getOpcode() == opcode) {
+				instruction.execute(currentInstruction);
+				break;
+			}
 		}
 	}
 	

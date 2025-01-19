@@ -24,35 +24,30 @@ public class UserInstruction {
 	public void setRegisters (int reg1, int reg2) {
 		reg1 = (reg1 << 4) & 0xFF;
 		reg2 = reg2 & 0xF;
-		this.instruction[0] |= (byte) (reg1 | reg2);
+		this.instruction[1] |= (byte) (reg1 | reg2);
 	}
 	
 	// Define o tipo de endereçamento
 	public void setAsDirect () {
 		this.instruction[0] |= 0b00000011 ;
 	}
-	
 	public void setAsIndirect () {
 		this.instruction[0] |= 0b00000010;
 	}
-	
 	public void setAsImmediate () {
 		this.instruction[0] |= 0b00000001;
 	}
 	
 	
-	// Definição das Flags
 	
 	// Flag X -> Relativo ao registrador X
 	public void setFlagX () {
 		this.instruction[1] |= 0b10000000 ;
 	}
-	
 	// Flag B -> Relativo ao registrador Base
 	public void setFlagB () {
 		this.instruction[1] |= 0b01000000 ;
 	}
-	
 	// Flag P -> Relativo ao Program Counter
 	public void setFlagP () {
 		this.instruction[1] |= 0b00100000 ;
@@ -77,17 +72,94 @@ public class UserInstruction {
 	}
 	
 	
+
 	
 	// Métodos Getter
 	public int getOpcode (){
-		if (this.format != 3 || this.format != 4)
+		if (this.format != 3 && this.format != 4)
 			return (int) this.instruction[0];
-		return this.format; // TENHO QUE ZERAR OS 2 ULTIMOS BITS do instruction[0] 
+		this.instruction[0] &= 0b11111100;
+		return (int) this.instruction[0];
 	}
-	
 	public byte[] getInstruction () {
 		return this.instruction;
 	}
+	public int getAddress (boolean extended) {
+		int address;
+		address = (this.instruction[1] & 0xF);
+		address = address << 8;
+		address |= this.instruction[2];
+		if (extended) {
+			address = address << 8;
+			address |= this.instruction[3];
+		}
+		
+		return address;
+	}
+	
+	public int[] getRegisters () {
+		int [] registers = new int[2];
+		registers[0] = this.instruction[1] & 0xF0;
+		registers[1] = this.instruction[1] & 0x0F;
+		return registers;
+	}
+	
+	// Métodos Booleanos
+	public boolean isDirect () {
+		int mask = 0b00000011;
+		int flags = this.instruction[1]&mask;
+		if (flags == mask)
+			return true;
+		return false;
+	}
+	public boolean isIndirect () {
+		int mask = 0b00000011;
+		int flags = this.instruction[1]&mask;
+		if (flags == 0b00000010)
+			return true;
+		return false;
+	}
+	public boolean isImmediate () {
+		int mask = 0b00000011;
+		int flags = this.instruction[1]&mask;
+		if (flags == 0b00000001)
+			return true;
+		return false;
+	}
+	
+	public boolean isRelativeToX () {
+		int mask = 0b10000000;
+		int flags = this.instruction[1] & mask;
+		if (flags == mask)
+			return true;
+		else
+			return false;
+	}
+	public boolean isRelativeToBase () {
+		int mask = 0b01000000;
+		int flags = this.instruction[1] & mask;
+		if (flags == mask)
+			return true;
+		else
+			return false;
+	}
+	public boolean isRelativeToPC () {
+		int mask = 0b00100000;
+		int flags = this.instruction[1] & mask;
+		if (flags == mask)
+			return true;
+		else
+			return false;
+	}
+	public boolean isExtended () {
+		int mask = 0b00010000;
+		int flags = this.instruction[1] & mask; // Zera todos menos flag E
+		if (flags == mask)						// Se for igual então é extendido.
+			return true;
+		return false;
+	}
+	
+	
 	
 	// Métodos de conversão
 	@Override

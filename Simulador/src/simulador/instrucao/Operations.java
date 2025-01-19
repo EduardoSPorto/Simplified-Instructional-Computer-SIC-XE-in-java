@@ -1,158 +1,428 @@
 package simulador.instrucao;
 
+import simulador.Memory;
+import simulador.Registers;
+
 public class Operations {
+	private Registers registers;
+	private Memory memory;
+	private int ciAddress; //Current Instruction Address
+	
+	public Operations (Memory memory, Registers registers) {
+		this.memory = memory;
+		this.registers = registers;
+	}
 	
 	
-	public void ADD() {
-	    // Implementação da instrução ADD
+	public void ADD(UserInstruction instruction) {
+		updateAddress(instruction);
+		int result;
+		
+		if (instruction.isImmediate())
+			result = registers.getRegisterValue("A") + ciAddress;
+		else
+			result = registers.getRegisterValue("A") + memory.readWord(ciAddress);
+			
+		registers.setRegisterValue("A", result);
 	}
 
-	public void ADDR() {
-	    // Implementação da instrução ADDR
+	public void ADDR(UserInstruction instruction) { 
+		int [] regs = instruction.getRegisters();
+		int result = memory.readWord(registers.getRegisterValue(regs[1])) + memory.readWord(registers.getRegisterValue(regs[0]));
+		registers.setRegisterValue(regs[1], result); 
 	}
 
-	public void AND() {
-	    // Implementação da instrução AND
+	public void AND(UserInstruction instruction) {
+		updateAddress(instruction);
+		int result;
+		
+		if (instruction.isImmediate())
+			result = registers.getRegisterValue("A") & ciAddress;
+		else
+			result = registers.getRegisterValue("A") & memory.readWord(ciAddress);
+		registers.setRegisterValue("A", result);
 	}
 
-	public void CLEAR() {
-	    // Implementação da instrução CLEAR
+	public void CLEAR(UserInstruction instruction) { 
+		int [] regs = instruction.getRegisters();
+		registers.setRegisterValue(regs[0], 0);
 	}
 
-	public void COMP() {
-	    // Implementação da instrução COMP
+	public void COMP(UserInstruction instruction) {
+	    updateAddress(instruction);
+	    int result;
+	    
+	    if (instruction.isImmediate())
+	    	result = registers.getRegisterValue("A") - ciAddress;
+	    else
+	    	result = registers.getRegisterValue("A") - memory.readWord(ciAddress);
+	    
+	    if (result > 0)
+	    	registers.setRegisterValue("SW", 1);
+	    else if (result == 0)
+	    	registers.setRegisterValue("SW", 0);
+	    else
+	    	registers.setRegisterValue("SW", -1);
 	}
 
-	public void COMPR() {
-	    // Implementação da instrução COMPR
+	public void COMPR(UserInstruction instruction) { 
+	    int [] regs = instruction.getRegisters();
+	    int result = registers.getRegisterValue(regs[0]) - registers.getRegisterValue(regs[1]);
+	    if (result == 0)
+	    	registers.setRegisterValue("SW", 0);
+	    else if (result > 1)
+	    	registers.setRegisterValue("SW", 1);
+	    else
+	    	registers.setRegisterValue("SW", -1);
 	}
 
-	public void DIV() {
-	    // Implementação da instrução DIV
+	public void DIV(UserInstruction instruction) {
+	    updateAddress(instruction);
+	    int result;
+	    
+	    if (instruction.isImmediate())
+	    	result = registers.getRegisterValue("A") / ciAddress;
+	    else
+	    	result = registers.getRegisterValue("A") / memory.readWord(ciAddress);
+	    registers.setRegisterValue("A", result);
 	}
 
-	public void DIVR() {
-	    // Implementação da instrução DIVR
+	public void DIVR(UserInstruction instruction) {  
+		int [] regs = instruction.getRegisters();
+		int result;
+		result = registers.getRegisterValue(regs[1]) / registers.getRegisterValue(regs[0]);
+		registers.setRegisterValue(regs[1], result);
 	}
 
-	public void J() {
-	    // Implementação da instrução J
+	public void J(UserInstruction instruction) {  
+		updateAddress(instruction);
+		
+		if (instruction.isImmediate())
+			registers.setRegisterValue("PC", ciAddress);
+		else
+			registers.setRegisterValue("PC", memory.readWord(ciAddress));
+	
 	}
 
-	public void JEQ() {
-	    // Implementação da instrução JEQ
+	public void JEQ(UserInstruction instruction) {
+	    updateAddress(instruction);
+	    
+	    if (registers.getRegisterValue("SW") == 0) {
+	    	if (instruction.isImmediate())
+				registers.setRegisterValue("PC", ciAddress);
+			else
+				registers.setRegisterValue("PC", memory.readWord(ciAddress));
+	    }
+		
 	}
 
-	public void JGT() {
-	    // Implementação da instrução JGT
+	public void JGT(UserInstruction instruction) {	
+	    updateAddress(instruction);
+	    
+	    if (registers.getRegisterValue("SW") > 0) {
+	    	if (instruction.isImmediate())
+				registers.setRegisterValue("PC", ciAddress);
+			else
+				registers.setRegisterValue("PC", memory.readWord(ciAddress));
+	    }
 	}
 
-	public void JLT() {
-	    // Implementação da instrução JLT
+	public void JLT(UserInstruction instruction) {	
+		updateAddress(instruction);
+		
+		if (registers.getRegisterValue("SW") < 0) {
+	    	if (instruction.isImmediate())
+				registers.setRegisterValue("PC", ciAddress);
+			else
+				registers.setRegisterValue("PC", memory.readWord(ciAddress));
+	    }
 	}
 
-	public void JSUB() {
-	    // Implementação da instrução JSUB
+	public void JSUB(UserInstruction instruction) {
+	    updateAddress(instruction);
+	    
+	    registers.setRegisterValue("L", registers.getRegisterValue("PC"));
+	    
+	    if (instruction.isImmediate())
+	    	registers.setRegisterValue("PC", ciAddress);
+	    else
+	    	registers.setRegisterValue("PC", memory.readWord(ciAddress));
 	}
 
-	public void LDA() {
-	    // Implementação da instrução LDA
+	public void LDA(UserInstruction instruction) {
+	    updateAddress(instruction);
+	    
+	    if (instruction.isImmediate())
+	    	registers.setRegisterValue("A", ciAddress);
+    	else
+    		registers.setRegisterValue("A", memory.readWord(ciAddress));	
 	}
 
-	public void LDB() {
-	    // Implementação da instrução LDB
+	public void LDB(UserInstruction instruction) {
+		updateAddress(instruction);
+	    
+	    if (instruction.isImmediate())
+	    	registers.setRegisterValue("B", ciAddress);
+    	else
+    		registers.setRegisterValue("B", memory.readWord(ciAddress));	
 	}
 
-	public void LDCH() {
-	    // Implementação da instrução LDCH
+	public void LDCH(UserInstruction instruction) {
+		updateAddress(instruction);
+	    
+	    if (instruction.isImmediate()) {
+	    	if (ciAddress > 255)
+	    		throw new IllegalArgumentException("Size " + ciAddress + " For Byte doesn't match it's value bounds");
+	    	registers.setRegisterValue("A", ciAddress);
+	    }
+    	else
+    		registers.setRegisterValue("A", memory.readByte(ciAddress,3));	
+		
 	}
 
-	public void LDL() {
-	    // Implementação da instrução LDL
+	public void LDL(UserInstruction instruction) {
+		updateAddress(instruction);
+	    
+	    if (instruction.isImmediate())
+	    	registers.setRegisterValue("L", ciAddress);
+    	else
+    		registers.setRegisterValue("L", memory.readWord(ciAddress));	
 	}
 
-	public void LDS() {
-	    // Implementação da instrução LDS
+	public void LDS(UserInstruction instruction) {
+		updateAddress(instruction);
+	    
+	    if (instruction.isImmediate())
+	    	registers.setRegisterValue("S", ciAddress);
+    	else
+    		registers.setRegisterValue("S", memory.readWord(ciAddress));
 	}
 
-	public void LDT() {
-	    // Implementação da instrução LDT
+	public void LDT(UserInstruction instruction) {
+		updateAddress(instruction);
+	    
+	    if (instruction.isImmediate())
+	    	registers.setRegisterValue("T", ciAddress);
+    	else
+    		registers.setRegisterValue("T", memory.readWord(ciAddress));
 	}
 
-	public void LDX() {
-	    // Implementação da instrução LDX
+	public void LDX(UserInstruction instruction) {
+		updateAddress(instruction);
+	    
+	    if (instruction.isImmediate())
+	    	registers.setRegisterValue("X", ciAddress);
+    	else
+    		registers.setRegisterValue("X", memory.readWord(ciAddress));	
 	}
 
-	public void MUL() {
-	    // Implementação da instrução MUL
+	public void MUL(UserInstruction instruction) {
+	    updateAddress(instruction);
+	    int result;
+	    
+	    if (instruction.isImmediate())
+	    	result = registers.getRegisterValue("A") * ciAddress;
+	    else
+	    	result = registers.getRegisterValue("A") * memory.readWord(ciAddress);
+	    
+	    registers.setRegisterValue("A", result);
 	}
 
-	public void MULR() {
-	    // Implementação da instrução MULR
+	public void MULR(UserInstruction instruction) { 
+		int [] regs = instruction.getRegisters();
+		int result;
+		
+		result = registers.getRegisterValue(regs[1]) * registers.getRegisterValue(regs[0]);
+		
+		registers.setRegisterValue(regs[1], result);
 	}
 
-	public void OR() {
-	    // Implementação da instrução OR
+	public void OR(UserInstruction instruction) {
+		updateAddress(instruction);
+		int result;
+		
+		if (instruction.isImmediate())
+			result = registers.getRegisterValue("A") | ciAddress;
+		else
+			result = registers.getRegisterValue("A") | memory.readWord(ciAddress);
+			
+
+		registers.setRegisterValue("A", result);
 	}
 
-	public void RMO() {
-	    // Implementação da instrução RMO
+	public void RMO(UserInstruction instruction) { 
+		int [] regs = instruction.getRegisters();
+		registers.setRegisterValue(regs[1], registers.getRegisterValue(regs[0]));
 	}
 
-	public void RSUB() {
-	    // Implementação da instrução RSUB
+	public void RSUB(UserInstruction instruction) {
+		registers.setRegisterValue("PC", registers.getRegisterValue("PC"));
 	}
 
-	public void SHIFTL() {
-	    // Implementação da instrução SHIFTL
+	public void SHIFTL(UserInstruction instruction) { 
+	    int [] regs = instruction.getRegisters();
+	    int value = registers.getRegisterValue(regs[0]) << regs[1];
+	    registers.setRegisterValue(regs[0], value);
 	}
 
-	public void SHIFTR() {
-	    // Implementação da instrução SHIFTR
+	public void SHIFTR(UserInstruction instruction) { 
+		int [] regs = instruction.getRegisters();
+	    int value = registers.getRegisterValue(regs[0]) >> regs[1];
+	    registers.setRegisterValue(regs[0], value);
 	}
 
-	public void STA() {
-	    // Implementação da instrução STA
+	public void STA(UserInstruction instruction) {
+		updateAddress(instruction);
+		
+		if (instruction.isImmediate())
+			memory.writeWord(ciAddress, registers.getRegisterValue("A"));
+		else
+			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("A"));
+
 	}
 
-	public void STB() {
-	    // Implementação da instrução STB
+	public void STB(UserInstruction instruction) {
+		updateAddress(instruction);
+
+		if (instruction.isImmediate())
+			memory.writeWord(ciAddress, registers.getRegisterValue("B"));
+		else
+			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("B"));
 	}
 
-	public void STCH() {
-	    // Implementação da instrução STCH
+	public void STCH(UserInstruction instruction) { 
+		updateAddress(instruction);
+		
+		if (instruction.isImmediate())
+			memory.writeByte(ciAddress, registers.getRegisterValue("A"), 3);
+		else
+			memory.writeByte(memory.readWord(ciAddress), registers.getRegisterValue("A"), 3);
 	}
 
-	public void STL() {
-	    // Implementação da instrução STL
+	public void STL(UserInstruction instruction) {
+		updateAddress(instruction);
+		
+		if (instruction.isImmediate())
+			memory.writeWord(ciAddress, registers.getRegisterValue("L"));
+		else
+			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("L"));
 	}
 
-	public void STS() {
-	    // Implementação da instrução STS
+	public void STS(UserInstruction instruction) {
+		updateAddress(instruction);
+		
+		if (instruction.isImmediate())
+			memory.writeWord(ciAddress, registers.getRegisterValue("S"));
+		else
+			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("S"));
 	}
 
-	public void STT() {
-	    // Implementação da instrução STT
+	public void STT(UserInstruction instruction) {
+		updateAddress(instruction);
+		
+		if (instruction.isImmediate())
+			memory.writeWord(ciAddress, registers.getRegisterValue("T"));
+		else
+			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("T"));
 	}
 
-	public void STX() {
-	    // Implementação da instrução STX
+	public void STX(UserInstruction instruction) {
+		updateAddress(instruction);
+		
+		if (instruction.isImmediate())
+			memory.writeWord(ciAddress, registers.getRegisterValue("X"));
+		else
+			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("X"));
 	}
 
-	public void SUB() {
-	    // Implementação da instrução SUB
+	public void SUB(UserInstruction instruction) {
+	    updateAddress (instruction);
+	    int result; 
+	    
+	    if (instruction.isImmediate())
+	    	result = registers.getRegisterValue("A") - ciAddress;
+	    else
+	    	result = registers.getRegisterValue("A") - memory.readWord(ciAddress);
+	    	    
+	    registers.setRegisterValue("A", result);
 	}
 
-	public void SUBR() {
-	    // Implementação da instrução SUBR
+	public void SUBR(UserInstruction instruction) {
+		int [] regs = instruction.getRegisters();
+		int result;
+		
+		result = registers.getRegisterValue(regs[1]) - registers.getRegisterValue(regs[0]);
+		
+		registers.setRegisterValue(regs[1], result);
+		
 	}
 
-	public void TIX() {
-	    // Implementação da instrução TIX
+	public void TIX(UserInstruction instruction) {
+	    updateAddress(instruction);
+	    int result;
+	    
+	    registers.setRegisterValue("X", registers.getRegisterValue("X") + 1);
+	    
+	    
+	    if (instruction.isImmediate())
+	    	result = registers.getRegisterValue("X") - ciAddress;
+	    else
+	    	result = registers.getRegisterValue("X") - memory.readWord(ciAddress);
+	    
+	    if (result > 0)
+	    	registers.setRegisterValue("SW", 1);
+	    else if (result == 0)
+	    	registers.setRegisterValue("SW", 0);
+	    else
+	    	registers.setRegisterValue("SW", -1);
 	}
 
-	public void TIXR() {
-	    // Implementação da instrução TIXR
+	public void TIXR(UserInstruction instruction) { 
+	    int [] regs = instruction.getRegisters();
+	    int result;
+	    
+	    registers.setRegisterValue("X", registers.getRegisterValue("X") + 1);
+	    
+	    result = registers.getRegisterValue("X") - registers.getRegisterValue(regs[0]);
+	    
+	    if (result > 0)
+	    	registers.setRegisterValue("SW", 1);
+	    else if (result == 0)
+	    	registers.setRegisterValue("SW", 0);
+	    else
+	    	registers.setRegisterValue("SW", -1);
 	}
-
+	
+	
+	
+	/*
+    =======================
+    updateAddress
+    ======================
+   */
+	public int updateAddress (UserInstruction instruction) {
+		if (instruction.isExtended()) 
+			this.ciAddress = instruction.getAddress(true);
+		else
+			this.ciAddress = instruction.getAddress(false);
+		
+		if (instruction.isImmediate())
+			return ciAddress;
+		
+		if (instruction.isIndirect())
+			ciAddress = memory.readWord(ciAddress);
+		// Se instrução for Direta, não faz nada
+		
+		if (instruction.isRelativeToX())
+			ciAddress = ciAddress + registers.getRegisterValue("X");
+		else if (instruction.isRelativeToBase())
+			ciAddress = ciAddress + registers.getRegisterValue("B");
+		else if (instruction.isRelativeToPC())
+			ciAddress = ciAddress + registers.getRegisterValue("PC");
+		
+		return ciAddress;
+		
+	}
+	
+		
 }

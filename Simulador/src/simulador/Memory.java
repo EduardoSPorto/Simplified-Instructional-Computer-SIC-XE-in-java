@@ -28,6 +28,7 @@ public class Memory {
         }
         return ((memory[address] & 0xFF) << 16) | ((memory[address + 1] & 0xFF) << 8) | (memory[address + 2] & 0xFF);
     }
+    
 
     // Escrita de palavra
     // Divide o valor de 24 bits em tres bytes
@@ -41,43 +42,62 @@ public class Memory {
         memory[address + 2] = (byte) (value & 0xFF);
     }
     
+    public int readByte (int address, int b) {
+    	if (address < 0 || address + 2 >= memory.length) 
+            throw new IndexOutOfBoundsException("Endereço inválido.");
+    	return memory[address + b];
+    }
+    
+    public void writeByte (int address, int value, int b) {
+    	if (address < 0 || address + 2 >= memory.length) {
+            throw new IndexOutOfBoundsException("Endereco invalido");
+        }
+    	memory[address + b] = (byte) (value & 0xFF);
+    }
+    
     public int getMemorySize () {
     	return this.size;
     }
     
-    // Escrita de instruções
+    
+    
+    /*
+    =======================
+    writeInstruction
+    ======================
+   */
     public void writeInstruction (int address, byte[] instruction, int format) {
     	if (address < 0 || address + 2 >= memory.length) {
             throw new IndexOutOfBoundsException("Endereco invalido");
         }
-    	if (format != 4) {
-    		memory[address] = instruction [0];
-            memory[address + 1] = instruction [1];
-            memory[address + 2] = instruction [2];
-    	}
-    	else {
-    		memory[address] = instruction [0];
-        	memory[address + 1] = instruction [1];
-        	memory[address + 2] = instruction [2];
-        	
-        	memory[address + 3] = instruction [3];
-        	memory[address + 4] = 0;
-        	memory[address + 5] = 0;
+    	memory[address] = instruction[0];
+    	if (format >= 2)
+    		memory[address + 1] =instruction[1];
+    	if (format >= 3)
+    		memory[address + 2] = instruction [2];
+    	if (format >= 4) {
+    		if (address + 5 >= memory.length)
+    			memory[address+3] = instruction[3];
     	}
     }
     
-    // Leitura de instruções
+    
+    
+    /*
+     =======================
+     readInstruction
+     ======================
+    */
     public byte [] readInstruction (int address) {
     	if (address < 0 || address + 2 >= memory.length) 
             throw new IndexOutOfBoundsException("Endereco invalido");
     	
+    	
     	byte [] instruction = null;
-    	byte opcode = memory[address];
+    	int opcode = memory[address] & 0xFF;
     	String format;
     	InstructionSet instructions = this.VirtualMachine.getVMInstructions();
     	Registers registers = this.VirtualMachine.getRegisters();
-    	
-    	registers.setRegister("PC", registers.getRegister("PC") + 3);
     	
     	opcode &= 0b11111100; // Deixa o opcode e tira as flags
     	format = instructions.getFormat(opcode);
@@ -109,7 +129,7 @@ public class Memory {
 			
 			if (isExtended) {
 				instruction[3] = memory[address+3];
-				registers.setRegister("PC", registers.getRegister("PC") + 3);
+				registers.setRegisterValue("PC", registers.getRegisterValue("PC") + 3);
 			}
     	}
     	
@@ -118,7 +138,12 @@ public class Memory {
     }
     
     
-    // Instruções de Testes Booleanas
+    
+    /*
+    =======================
+    isEmpty
+    ======================
+   */
     public boolean isEmpty (int address) {
     	if (address < 0 || address + 2 >= memory.length) {
             throw new IndexOutOfBoundsException("Endereco invalido");
