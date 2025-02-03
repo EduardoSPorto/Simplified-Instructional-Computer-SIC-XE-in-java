@@ -6,9 +6,9 @@ import simulador.instrucao.UserInstruction;
 public class Memory {
     private byte[] memory;
     private int size;
-    private VMSimulator VirtualMachine;
+    
 
-    public Memory(int size, VMSimulator VM) {
+    public Memory(int size) {
         if (size > 1024 * 1024) { // Inicializa até 1MB
             throw new IllegalArgumentException("Memoria maior que 1 mb.");
         } else if (size < 1024) {
@@ -16,8 +16,6 @@ public class Memory {
         }
         this.size = size;
         memory = new byte[size];
-        
-        this.VirtualMachine = VM;
     }
 
     // Leitura de palavras de 24 bits
@@ -82,60 +80,6 @@ public class Memory {
     }
     
     
-    
-    /*
-     =======================
-     readInstruction
-     ======================
-    */
-    public byte [] readInstruction (int address) {
-    	if (address < 0 || address + 2 >= memory.length) 
-            throw new IndexOutOfBoundsException("Endereco invalido");
-    	
-    	
-    	byte [] instruction = null;
-    	int opcode = memory[address] & 0xFF;
-    	String format;
-    	InstructionSet instructions = this.VirtualMachine.getVMInstructions();
-    	Registers registers = this.VirtualMachine.getRegisters();
-    	
-    	opcode &= 0b11111100; // Deixa o opcode e tira as flags
-    	format = instructions.getFormat(opcode);
-    	
-    	switch (format) {
-		case "1":
-			instruction = new byte [1];
-			instruction[0] = memory[address];
-			break;
-		case "2":
-			instruction = new byte [2];
-			instruction[0] = memory[address];
-			instruction[1] = memory[address + 1];
-			break;
-		case "3/4":
-			boolean isExtended = false;		// Define se é tipo 3 ou tipo 4
-			byte flags = memory[address + 1];
-			byte mask = 0b00010000; 		// Isso zera todos os valores menos o flag extended
-			
-			if (flags == mask) {		
-				isExtended = true;
-				instruction = new byte [4];
-			} else
-				instruction = new byte [3];
-			
-			instruction[0] = memory[address];
-			instruction[1] = memory[address+1];
-			instruction[2] = memory[address+2];
-			
-			if (isExtended) {
-				instruction[3] = memory[address+3];
-				registers.setRegisterValue("PC", registers.getRegisterValue("PC") + 3);
-			}
-    	}
-    	
-    	return instruction;
-    	
-    }
     
     
     

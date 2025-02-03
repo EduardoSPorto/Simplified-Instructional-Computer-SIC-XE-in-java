@@ -275,64 +275,64 @@ public class Operations {
 		updateAddress(instruction);
 		
 		if (instruction.isImmediate())
-			memory.writeWord(ciAddress, registers.getRegisterValue("A"));
+			throw new IllegalArgumentException("Instrução do tipo Store não pode ser imediata");
 		else
-			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("A"));
-
+			memory.writeWord(ciAddress, registers.getRegisterValue("A"));
 	}
 
 	public void STB(UserInstruction instruction) {
 		updateAddress(instruction);
 
-		if (instruction.isImmediate())
-			memory.writeWord(ciAddress, registers.getRegisterValue("B"));
+		if (instruction.isImmediate()) 
+			throw new IllegalArgumentException("Instrução do tipo Store não pode ser imediata");
 		else
-			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("B"));
+			memory.writeWord(ciAddress, registers.getRegisterValue("B"));
 	}
 
 	public void STCH(UserInstruction instruction) { 
 		updateAddress(instruction);
 		
 		if (instruction.isImmediate())
-			memory.writeByte(ciAddress, registers.getRegisterValue("A"), 3);
+			throw new IllegalArgumentException("Instrução do tipo Store não pode ser imediata");
 		else
-			memory.writeByte(memory.readWord(ciAddress), registers.getRegisterValue("A"), 3);
+			memory.writeByte(ciAddress, registers.getRegisterValue("A"), 3);
+
 	}
 
 	public void STL(UserInstruction instruction) {
 		updateAddress(instruction);
 		
 		if (instruction.isImmediate())
-			memory.writeWord(ciAddress, registers.getRegisterValue("L"));
+			throw new IllegalArgumentException("Instrução do tipo Store não pode ser imediata");
 		else
-			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("L"));
+			memory.writeWord(ciAddress, registers.getRegisterValue("L"));
 	}
 
 	public void STS(UserInstruction instruction) {
 		updateAddress(instruction);
 		
 		if (instruction.isImmediate())
-			memory.writeWord(ciAddress, registers.getRegisterValue("S"));
+			throw new IllegalArgumentException("Instrução do tipo Store não pode ser imediata");
 		else
-			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("S"));
+			memory.writeWord(ciAddress, registers.getRegisterValue("S"));
 	}
 
 	public void STT(UserInstruction instruction) {
 		updateAddress(instruction);
 		
 		if (instruction.isImmediate())
-			memory.writeWord(ciAddress, registers.getRegisterValue("T"));
+			throw new IllegalArgumentException("Instrução do tipo Store não pode ser imediata");
 		else
-			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("T"));
+			memory.writeWord(ciAddress, registers.getRegisterValue("T"));
 	}
-
+	
 	public void STX(UserInstruction instruction) {
 		updateAddress(instruction);
 		
 		if (instruction.isImmediate())
-			memory.writeWord(ciAddress, registers.getRegisterValue("X"));
+			throw new IllegalArgumentException("Instrução do tipo Store não pode ser imediata");
 		else
-			memory.writeWord(memory.readWord(ciAddress), registers.getRegisterValue("X"));
+			memory.writeWord(ciAddress, registers.getRegisterValue("X"));
 	}
 
 	public void SUB(UserInstruction instruction) {

@@ -16,7 +16,7 @@ public class UserInstruction {
 		for (int i = 0; i < format; i++)
 			this.instruction[i] = instruction[i];
 	}
-
+	
 	public void setOpcode (int opcode) { 
 		this.instruction[0] = (byte) opcode;
 	}
@@ -78,8 +78,10 @@ public class UserInstruction {
 	public int getOpcode (){
 		if (this.format != 3 && this.format != 4)
 			return (int) this.instruction[0];
-		this.instruction[0] &= 0b11111100;
-		return (int) this.instruction[0];
+		
+		int opcode;
+		opcode = this.instruction[0] & 0b11111100;
+		return opcode;
 	}
 	public byte[] getInstruction () {
 		return this.instruction;
@@ -107,21 +109,21 @@ public class UserInstruction {
 	// Métodos Booleanos
 	public boolean isDirect () {
 		int mask = 0b00000011;
-		int flags = this.instruction[1]&mask;
+		int flags = this.instruction[0]&mask;
 		if (flags == mask)
 			return true;
 		return false;
 	}
 	public boolean isIndirect () {
 		int mask = 0b00000011;
-		int flags = this.instruction[1]&mask;
+		int flags = this.instruction[0]&mask;
 		if (flags == 0b00000010)
 			return true;
 		return false;
 	}
 	public boolean isImmediate () {
 		int mask = 0b00000011;
-		int flags = this.instruction[1]&mask;
+		int flags = this.instruction[0]&mask;
 		if (flags == 0b00000001)
 			return true;
 		return false;
@@ -164,7 +166,12 @@ public class UserInstruction {
 	// Métodos de conversão
 	@Override
 	public String toString() {
-		return "Instrução: " + String.format("%32s", Integer.toBinaryString(this.toInteger())).replace(' ', '0');
+		if (format == 2)
+			return "Instrução: " + String.format("%16s", Integer.toBinaryString(this.toInteger())).replace(' ', '0');
+		else if (format == 3)
+			return "Instrução: " + String.format("%24s", Integer.toBinaryString(this.toInteger())).replace(' ', '0');
+		else
+			return "Instrução: " + String.format("%32s", Integer.toBinaryString(this.toInteger())).replace(' ', '0');
 	}
 	
 	public int toInteger () {
