@@ -34,6 +34,19 @@ public class Registers {
         registerMap.put("F", 6); // F é tratado separadamente (48 bits)
     }
 
+    public Map<String, Integer> getRegisterMap() {
+        Map<String, Integer> currentValues = new HashMap<>();
+        for (Map.Entry<String, Integer> entry : registerMap.entrySet()) {
+            String mnemonic = entry.getKey();
+            if (mnemonic.equals("F")) {
+                currentValues.put(mnemonic, (int) getRegisterFValue());
+            } else {
+                currentValues.put(mnemonic, getRegisterValue(mnemonic));
+            }
+        }
+        return currentValues;
+    }
+    
     // Definir valor no registrador (24 bits)
     public void setRegisterValue(String mnemonic, int value) {
         if (mnemonic.equals("F")) {
