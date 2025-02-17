@@ -11,4 +11,5 @@ public class DataUtils {
     public static byte charToByte(char c) {
         return (byte) c;
     }
+    
 }

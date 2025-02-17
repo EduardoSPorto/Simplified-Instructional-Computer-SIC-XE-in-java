@@ -5,14 +5,11 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import simulador.instrucao.Operations;
-import simulador.instrucao.VMInstruction;
 
 public class SicXeReservedWords {
 	private static Map<String, String[]> instructions;
 	private static Set<String> directives;
 	private static HashSet<String> symbols;
-	private static Operations vmOperations;
 	
 	static{
 		instructions = new 	HashMap<>();
