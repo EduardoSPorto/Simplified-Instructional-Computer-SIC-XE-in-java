@@ -4,22 +4,25 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongConsumer;
 
+import simulador.DataUtils;
+
 public class ObjectProgram {
 	String header;
 	List<String> text;
 	String tempText; // Salva escrita em outro lugar para permitir modificar as colunas 8 e 9 que referem-se ao tamanho da linha de texto
 	String end;
-	int textLines;
+	int textLine;
 	int textColumn;
 	
 	
 	public ObjectProgram (String name, String startAddress, String lenght) {
 		header = "H" + name + startAddress + lenght;
 		text = new ArrayList<>();
-		end = "E000000";
+		end = "E"+startAddress; // Por padrão é ele, mas se for indicado um novo endereço, então substitui
 		
 		text.add("T");
-		textLines = 0;
+		tempText = "";
+		textLine = 0;
 		textColumn = 1;
 	}
 	
@@ -33,47 +36,47 @@ public class ObjectProgram {
 	public void addToText (String objectCode, int LOCCTR) {
 		String hexLOCCTR = Integer.toHexString(LOCCTR);
 		if (hexLOCCTR.length() < 6)
-			hexLOCCTR = to6BytesAdressingFormat(hexLOCCTR);
+			hexLOCCTR = DataUtils.to6BytesAdressingFormat(hexLOCCTR);
+		if (objectCode.length() < 6)
+			objectCode = DataUtils.to6BytesAdressingFormat(objectCode);
 		
 		if (textColumn == 1) {
-			text.get(textLines).concat(hexLOCCTR);
+			text.set(textLine, text.get(textLine).concat(hexLOCCTR));
 			textColumn+=8;	// 6 colunas para endereço inicial, 2 Colunas para tamaho da linha (bytes)
 		}
 		else if ( (textColumn + objectCode.length() ) >= 68) {
-			finishTextLine(objectCode);
+			finishTextLine();
+			startNewTextLine();
 			addToText (objectCode, LOCCTR);
 			return;
 		}
 		
-		tempText.concat(objectCode);
+		tempText = tempText.concat(objectCode);
 		textColumn+=objectCode.length();
 	}
 	
-	public void addToText () {
+	public void finishTextLine () {
 		if (textColumn == 1) 
 			return;
 		int objectCodeLenght = (textColumn - 9) / 2; 
-		text.get(textLines).concat(Integer.toHexString(objectCodeLenght));
-		text.get(textLines).concat(tempText);
+		String t1 = Integer.toHexString(objectCodeLenght).concat(tempText);
+		text.set(textLine, text.get(textLine).concat(t1));
 		
-		text.add("T");
-		textLines++;
-		textColumn = 1;
-		
+	}
+	public void startNewTextLine () {
+			text.add("T");
+			tempText = "";
+			textLine++;
+			textColumn = 1;
 	}
 	
-	public void finishTextLine (String objectCode) {
-		int objectCodeLenght = (textColumn - 9) / 2; 
-		text.get(textLines).concat(Integer.toHexString(objectCodeLenght));
-		text.get(textLines).concat(tempText);
-		
-		// Começa nova linha de text
-		text.add("T");
-		textLines++;
-		textColumn = 1;
+	public void endObjectProg () {
+		this.finishTextLine();
 	}
 	
-	public String to6BytesAdressingFormat (String oldAddressFormat) {
-		return String.format("%6s", oldAddressFormat).replace(' ', '0');
+	public void endObjectProg (String StartingAddress) {
+		this.finishTextLine();
+		this.end = "E" + StartingAddress;
 	}
+	
 }

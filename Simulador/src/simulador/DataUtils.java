@@ -12,4 +12,7 @@ public class DataUtils {
         return (byte) c;
     }
     
+    public static String to6BytesAdressingFormat (String oldAddressFormat) {
+		return String.format("%6s", oldAddressFormat).replace(' ', '0');
+	}
 }
