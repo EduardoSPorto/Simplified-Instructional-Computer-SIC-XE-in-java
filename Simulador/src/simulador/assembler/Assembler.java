@@ -11,15 +11,19 @@ import simulador.instrucao.VMInstruction;
 
 public class Assembler {
 	Memory vmMemory;
-	VMInstruction vmInstructions;
+	InstructionSet vmInstructions;
 	Registers vmRegisters;
 	SymbolTable SYMTAB;
+	int startAddress;
 	int LOCCTR;
 	int programLenght;
+	ObjectProgram objectProgram;
 	
 	public Assembler (String[] mnemonics, Memory vmMemory, InstructionSet vmInstructionSet, Registers vmRegisters) {
-		this.vmMemory =vmMemory;		
-		SYMTAB = new SymbolTable();
+		this.vmMemory =vmMemory;
+		this.vmInstructions = vmInstructionSet;	
+		this.vmRegisters = vmRegisters;
+		this.SYMTAB = new SymbolTable();
 		String [] intermediateFile;
 		
 		intermediateFile = firstPass (mnemonics);
@@ -27,20 +31,21 @@ public class Assembler {
 	}
 	
 	
+	
 	public String[] firstPass (String[] mnemonics) {
-		int startAddress;
 		this.programLenght = 0;		
 		String[] intermediateFile = new String[mnemonics.length];
 		
-		String[] mLine = mnemonics[0].split(" ");
-		String opcode = mLine[0];
+		String[] mColumns = mnemonics[0].split(" ");
+		String label = mColumns[0];
+		String opcode = mColumns[1];
 		
 		// Inicializando com Start e definindo endereços iniciais
-		if (opcode.equals("START")) {
-			if ( !(mLine[1].isBlank()) )  {
-				startAddress = Integer.parseInt(mLine[1]);
+		if (label.equals("START")) {
+			if ( !(opcode.isBlank()) )  {
+				startAddress = Integer.parseInt(mColumns[1]);
 				this.LOCCTR = startAddress;
-				intermediateFile[0] = String.join(" ", mLine);
+				intermediateFile[0] = String.join(" ", mColumns);
 			}
 			else { // Se START não especifica endereço, então endereço inicial é zero
 				startAddress = 0;
@@ -54,88 +59,83 @@ public class Assembler {
 		
 		// Variáveis para facilitar referenciamento
 		int index = 1;
-		mLine = mnemonics[index].split(" ");
-		opcode = mLine[0];
+		boolean hasLabel = false;
+		boolean isDirective = false;
+		boolean isInstruction = false;
+		mColumns = mnemonics[index].split(" ");
+		
+		hasLabel = this.isLabel(mColumns[0]);
+		if (hasLabel) {
+			label  = mColumns[0];
+			opcode = mColumns[1];
+		}
+		else {
+			opcode = mColumns[0];
+			label = "";
+		}
+		
+		isDirective = this.isDirective(opcode);
+		isInstruction = this.isInstruction(opcode);
 		
 		
-		while (opcode != "END") {
-			if (opcode.contains(".")) 				// Pula linhas de comentário
+		while (label != "END") {
+			if (mColumns[0].contains(".")) 				// Pula linhas de comentário
 				continue;
 			
-			if( !(SicXeReservedWords.isReservedWord(opcode)) ) { //Verifica se tem Label 
-				if (SYMTAB.contains(opcode)) 
+			if( hasLabel ) { 
+				if (SYMTAB.contains(label)) 
 					throw new IllegalArgumentException("Duplicated Label Definition");
 				else {
-					SYMTAB.insert(opcode, this.LOCCTR);
-					firstPassOperation(mLine[1], mLine[2]);					
+					SYMTAB.insert(label, this.LOCCTR);
+					updateLOCCTR(opcode, mColumns[2], isDirective, isInstruction);
+					this.eraseLabel(mColumns); 			// Remove o Label do código texto, Montador conhece ele pela tabela de símbolos
 				}
 			}
-			else { 	//Se não tem Label
-				firstPassOperation(opcode, mLine[1]);
+			else { 	
+				updateLOCCTR(opcode, mColumns[1], isDirective, isInstruction);
 			}
 			
-			intermediateFile[index] = String.join(" ", mLine);
+			intermediateFile[index] = String.join(" ", mColumns);
+			
 			index++;
-			mLine = mnemonics[index].split(" ");
-			opcode = mLine[0];
+			mColumns = mnemonics[index].split(" ");
+			hasLabel = this.isLabel(mColumns[0]);
+			if (hasLabel) {
+				label  = mColumns[0];
+				opcode = mColumns[1];
+			}
+			else {
+				opcode = mColumns[0];
+				label = "";
+			}			
+			isDirective = this.isDirective(opcode);
+			isInstruction = this.isInstruction(opcode);
 		}
 		
 		this.programLenght = this.LOCCTR - startAddress; 
 		return intermediateFile;
 	}
 	
-	
-	
-	private void secondPass(String[] intermediateFile) {
-		int Lline;
-		int index = 0;
-		String [] inputLine = intermediateFile[0].split(" ");
-		String opcode = inputLine[0];
-		
-		
-		
-	}
-
-	
-	
-	
-	
-	public void listLine (String[] inputLine, int line, int loc, int objectCode) {
-		if (line == 5) {
-			System.out.println(String.format("%-7s %-7s %-30s %-10s", "Line", "Loc", "Source Statement", "Object Code"));
-			System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
-		}
-		
-		String StatmentA = inputLine[1];
-		String StatmentB = "",StatmentC = "";
-		if (inputLine.length>=2) 
-			StatmentB = inputLine[1];
-		if (inputLine.length>=3)
-			StatmentC = inputLine[2];
-		
-		System.out.println(String.format("%-7s %-7s %-30s %-10s", line, loc, StatmentA + " " + StatmentB + " " + StatmentC, Integer.toHexString(objectCode)));	
-	}
-	
-	
-	public void firstPassOperation (String opcode, String operand) {
+	public void updateLOCCTR (String opcode, String operand, boolean isDirective, boolean isIntruction) {
 		boolean extended = false;
 		if (opcode.contains("+")) {
 			opcode = opcode.substring(1);
 			extended = true;
-			if (!(SicXeReservedWords.isInstruction(opcode)) && !SicXeReservedWords.getInstructionFormat(opcode).equals("3/4"))
+			if ((isDirective == false) && !SicXeReservedWords.getInstructionFormat(opcode).equals("3/4"))
 				throw new IllegalArgumentException("'+' Symbol is only applyable for instructions of type 4");
 		}
 		
 		if ( !(SicXeReservedWords.isReservedWord(opcode)) )
 			throw new IllegalArgumentException("Operation Undefined");
 		else {
-			if (SicXeReservedWords.isInstruction(opcode)) {
+			if (isIntruction) {
 				if (SicXeReservedWords.getInstructionFormat(opcode) == "3/4") {
 					if (extended)
 						this.LOCCTR = 4;
 					else
 						this.LOCCTR = 3;
-				} else
+				} 
+				else
 					this.LOCCTR = Integer.parseInt(SicXeReservedWords.getInstructionFormat(opcode));
 			}
 			else if (opcode.equals("WORD"))
@@ -151,43 +151,7 @@ public class Assembler {
 		}
 		
 	}
-	
-	
-	/*
-	 =================================== 
-	 VMSimulator::flagSetter
-	 =================================== 
-	*/
-	public void flagSetter (String mnemonicOperand, int format, UserInstruction MLInstruction) {
-		// Define o tipo de endereçamento (direto, indireto, imediato)
-		if (Character.isDigit(mnemonicOperand.charAt(0)))
-			MLInstruction.setAsDirect();
-		else {
-			if (mnemonicOperand.charAt(0) == '@')
-				MLInstruction.setAsIndirect();
-			else if (mnemonicOperand.charAt(0) == '#')
-				MLInstruction.setAsImmediate();
-		}
-		
-		// Define se tem relatividade a outros registradores (base, X, PC)
-		String complement = "";
-		if (mnemonicOperand.contains(",")) {
-		    complement = mnemonicOperand.split(",")[1];
-		}
-		switch (complement) {
-			case "X":
-				MLInstruction.setFlagX();
-				break;
-			case "PC":
-				MLInstruction.setFlagP();
-				break;
-			case "B":
-				MLInstruction.setFlagB();
-		}
-	}
-	
 
-	
 	/*
 	 ===================================
 	 VMSimulator::eraseLabel
@@ -195,15 +159,198 @@ public class Assembler {
 	 	Facilitando a manipulação daquele mnemonico
 	 ===================================
 	*/
-	
-	public String[] eraseLabel (String [] mnemonicInstruction) {
-		int mnemonicSize = mnemonicInstruction.length;
-		String[] newMnemonic = new String [mnemonicSize-1];
+	public void eraseLabel (String [] mColumns) {
+		int mnemonicSize = mColumns.length;
 		for (int i=0; i<mnemonicSize-1; i++) {
-			newMnemonic[i] = mnemonicInstruction[i+1];
+			mColumns[i] = mColumns[i+1];
 		}
-		return newMnemonic;
 	}
+	
+	
+	
+	private void secondPass(String[] intermediateFile) {
+		int Lline = 0;
+		int index = 0;
+		this.LOCCTR = this.startAddress;
+		
+		String [] mColumns = intermediateFile[index].split(" ");
+		System.out.println(String.format("%-7s %-7s %-30s %-10s", "Line", "Loc", "Source Statement", "Object Code"));
+		System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
+		
+		//Escrita cabeçalho - INICIO
+		String name = "";
+		if (!SicXeReservedWords.isReservedWord(mColumns[0]))
+			name = mColumns[0];
+		
+		objectProgram = new ObjectProgram(	String.format("%-6s", name).replace(' ', '0'), 
+											String.format("%6s", Integer.toHexString(startAddress)).replace(' ', '0'), 
+											String.format("%6s", Integer.toHexString(programLenght)).replace(' ', '0')	);
+	
+		String opcode = "";
+		do {
+			mColumns = intermediateFile[index].split(" ");
+			opcode = mColumns[0];
+		
+			if (SicXeReservedWords.hasReservedSymbol(opcode)) {			// Só verifica e remove símbolos como + para facilitar leitura, Verificação de veracidade deve ser feita na etapa anterior ou com tabela de símbolos
+				opcode = opcode.substring(1);					
+			}
+			
+			if (SicXeReservedWords.isDirective(opcode)) {
+				int value = Integer.parseInt(mColumns[1]);
+				
+				if (! (opcode.equals("RESW") || opcode.equals("RESB"))) 
+				{
+					objectProgram.addToText(Integer.toHexString(value), LOCCTR);
+					if (opcode.equals("WORD")) 
+						LOCCTR+=3;
+					else if (opcode.equals("BYTE"))
+						LOCCTR+=1;		// Pode ser mudado se for levar em contra a outra implementação do BYTE
+					this.listLine(mColumns, Lline++, value, Integer.toHexString(value));
+				}
+				else
+				{
+					objectProgram.addToText();
+					if (opcode.equals("WORD"))
+						LOCCTR += (3*value);
+					else if (opcode.equals("BYTE"))
+						LOCCTR += value;
+					this.listLine(mColumns, Lline, index);
+				}
+			}
+			else if (SicXeReservedWords.isInstruction(opcode)) {
+				UserInstruction currentInstruction = translateInstruction(mColumns);
+				objectProgram.addToText(currentInstruction.toString(), LOCCTR);
+				LOCCTR += currentInstruction.getFormat();
+				this.listLine(mColumns, Lline++, index, currentInstruction.toString());
+			}
+			
+			index++;
+		}while (! opcode.equals("END"));		
+		
+		
+	}
+	
+
+	/*
+	 =================================== 
+	 Assembler::translateInstruction
+	 	Transforma mnemônico em código de máquina
+	 =================================== 
+	*/
+	public UserInstruction translateInstruction (String[] mnemonicInstrucion) {
+		UserInstruction binaryInstruction;
+		int opcode;
+		String format;
+		int integerFormat;
+		
+		
+		String sOpcode = mnemonicInstrucion[0];				//Symbolic Opcode
+		boolean extended = false;
+		if (sOpcode.charAt(0) == '+') {
+			extended = true;
+			sOpcode = sOpcode.substring(1);
+		}
+		String operandA = "", operandB = "";
+		operandA = mnemonicInstrucion[1];
+		if (mnemonicInstrucion.length == 3)
+			operandB = mnemonicInstrucion[2];
+		
+		Map<Integer, String> info = vmInstructions.getInfo(sOpcode);
+		opcode = (int) info.keySet().toArray()[0];
+		format = info.get(opcode);
+		if (format.equals("3/4") && extended)
+			format = "4";
+		else
+			format = "3";
+		integerFormat = Integer.parseInt(format);
+		binaryInstruction = new UserInstruction(integerFormat);
+		binaryInstruction.setOpcode(opcode);
+		
+		
+		switch (integerFormat) {
+		case 1:
+			break;
+		case 2:
+			int firstRegIndex = vmRegisters.getRegisterValue(operandA);
+			int secondRegIndex = vmRegisters.getRegisterValue(operandB);
+			binaryInstruction.setRegisters(firstRegIndex, secondRegIndex);
+			break;
+		case 3:
+			if (SYMTAB.contains(operandA))
+				operandA = SYMTAB.get(operandA);
+			flagSetter(binaryInstruction, integerFormat,operandA);
+			
+			int dispValue = this.toInteger(operandA);
+			binaryInstruction.setDisp(dispValue);
+			break;
+		case 4:
+			if (SYMTAB.contains(operandA))
+				operandA = SYMTAB.get(operandA);
+			flagSetter(binaryInstruction, integerFormat,operandA);
+			binaryInstruction.setFlagE();
+			
+			int addressValue = this.toInteger(operandA);
+			binaryInstruction.setDisp(addressValue);
+			break;
+		}
+		
+		return binaryInstruction;
+	}
+	
+	
+	public void listLine (String[] mColumns, int line, int loc, String ObjectCode) {
+		
+		String statmentA = mColumns[1];
+		String statmentB = "",statmentC = "";
+		if (mColumns.length>=2) 
+			statmentB = mColumns[1];
+		if (mColumns.length>=3)
+			statmentC = mColumns[2];
+		
+		System.out.println(String.format("%-7s %-7s %-30s %-10s", line*5, loc, statmentA + " " + statmentB + " " + statmentC, ObjectCode));	
+	}
+	public void listLine (String[] mColumns, int line, int loc) {
+		String statmentA = mColumns[1];
+		String statmentB = "";
+		if (mColumns.length==2)
+			statmentB = mColumns[1];
+		
+		System.out.println(String.format("%-7s %-7s %-30s", line*5, loc, statmentA + " " + statmentB));
+	}
+	
+	/*
+	 =================================== 
+	 VMSimulator::flagSetter
+	 =================================== 
+	*/
+	public void flagSetter (UserInstruction binaryInstruction, int format, String operand) {
+		// Define o tipo de endereçamento (direto, indireto, imediato)
+		if (Character.isDigit(operand.charAt(0)))
+			binaryInstruction.setAsDirect();
+		else {
+			if (operand.charAt(0) == '@')
+				binaryInstruction.setAsIndirect();
+			else if (operand.charAt(0) == '#')
+				binaryInstruction.setAsImmediate();
+		}
+		
+		// Define se tem relatividade a outros registradores (base, X, PC)
+		String complement = "";
+		if (operand.contains(",")) {
+		    complement = operand.split(",")[1];
+		}
+		switch (complement) {
+			case "X":
+				binaryInstruction.setFlagX();
+				break;
+			case "PC":
+				binaryInstruction.setFlagP();
+				break;
+			case "B":
+				binaryInstruction.setFlagB();
+		}
+	}
+
 	
 	
 	
@@ -221,137 +368,31 @@ public class Assembler {
 			return Integer.parseUnsignedInt(strValue.substring(2), 16);
 		return Integer.parseInt(strValue);
 	}
+	
+	
+	/*
+	 ===================================
+	 VMSimulator::isLabel
+	 ===================================
+	*/
+	boolean isLabel (String mnemonic) {
+		return ! (SicXeReservedWords.isReservedWord(mnemonic));
+	}
+	/*
+	 ===================================
+	 VMSimulator::isDirective
+	 ===================================
+	*/
+	boolean isDirective (String mnemonic) {
+		return SicXeReservedWords.isDirective(mnemonic);
+	}
+	/*
+	 ===================================
+	 VMSimulator::isDirective
+	 ===================================
+	*/
+	boolean isInstruction (String mnemonic) {
+		return SicXeReservedWords.isInstruction(mnemonic);
+	}
 }
-
-
-
-
-
-//memoryPointer = 0;
-//int baseAddress = 0;
-//boolean started = false;
-//boolean finished = false;
-//
-//for (int i = 0; finished != true; i++) { /*-=-=-=-=-=-=-=--=-=-=-=-=  SEGUNDA PASSADA  -=-=-=-=-=-=-=-=-=--=-=-=-=-=-
-// 												Execução do programa e Substituição dos Labels						*/
-//	
-//	if (mnemonics[i].charAt(0) == '.') //Ignora comentários  									
-//		continue;
-//	
-//	String [] mnemonicInstruction = mnemonics[i].split(" "); 					// [Label (se Tiver)] [Operação] [Operando A] [Operando B (se tiver)] | [Label] [Diretiva]
-//	if (SicXeReservedWords.isReservedWord(mnemonicInstruction[0]) == false) { 	// Se tiver, remove o Label
-//		mnemonicInstruction = this.eraseLabel(mnemonicInstruction); 			// [Operação] 	[Operando A] 	[Operando B (se tiver)]	|  	[Diretiva]	[Complemento]
-//	}																			
-//	// Abaixo é uma facilitação para referenciar 									mFirst		 mSecond		 mThird					|	mFirst		mSecond				
-//	String mFirst = mnemonicInstruction[0];
-//	String mSecond = mnemonicInstruction[1];
-//	String mThird = null;
-//	if (mnemonicInstruction[2] != null) {
-//		mThird = mnemonicInstruction[2];				
-//	}
-//	
-//	
-//	if (!started) {
-//		if (mFirst.equals("START") == false) { 
-//			throw new IllegalArgumentException("Programa não foi iniciado");
-//		}
-//		else {
-//			started = true;
-//			baseAddress = Integer.parseInt(mSecond);
-//		} 
-//	}
-//	
-//	else 																				//A partir daqui assume que o programa foi iniciado 
-//	{ 
-//		if (mFirst.equals("START"))
-//			throw new IllegalArgumentException("Programa já iniciado anteriormente");
-//		else if (mFirst.equals("END")) {
-//			finished = true;
-//			continue;
-//		}
-//		
-//		else if (SicXeReservedWords.isDirective(mFirst)) { 	//-=--=-=-=-= DIRETIVAS -=-=-=-=-=--=-=-
-//															// NÃO Considera START e END. Pois já são tratadas antes
-//			if (mFirst == "WORD") {
-//				int absoluteAddress = baseAddress + memoryPointer;
-//				vmMemory.writeWord(absoluteAddress, i);
-//			}
-//			
-//			
-//			
-//			memoryPointer++;
-//		}
-//		
-//		else { 												//-=-=-=-=-=- INSTRUÇÃO -=-=-=-=-==-=-=-
-//			
-//			// Extração de opcode e formato (bytes) da instrução
-//			Map<Integer, String> info = vmInstructionSet.getInfo(mFirst); 
-//			int opcode = (int) info.keySet().toArray()[0];
-//			String strFormat = info.get(opcode);
-//			
-//			// Coloca formato em inteiro, levando em conta sintexa de endereçamento (@, #)
-//			int integerFormat;
-//			if (strFormat == "3/4") {
-//				
-//				boolean isDirect = Character.isDigit(mSecond.charAt(0));
-//				
-//				if (isDirect)
-//					integerFormat = (toInteger(mSecond) < 4095) ? 3 : 4;
-//				else
-//					integerFormat = (toInteger(mSecond.substring(1)) < 4095) ? 3 : 4;
-//				
-//			} else 
-//				integerFormat = Integer.parseInt(strFormat);
-//
-//			// T.A.D. que permite melhor manipulação sobre a instrução
-//			UserInstruction binaryInstruction = new UserInstruction(integerFormat);
-//			binaryInstruction.setOpcode(opcode);
-//			
-//			if (integerFormat == 3 || integerFormat == 4) {
-//				if (SicXeReservedWords.isReservedSymbol(String.valueOf(mSecond.charAt(0)))) {  //String.Value converte o char na posição 0 em uma String de tam 1
-//					continue;
-//				}
-//				else {
-//					if (sTable.contains(mSecond)) {
-//						mSecond = sTable.get(mSecond);	//Substitui Label por valor
-//					}
-//				}
-//			}
-//
-//			switch (integerFormat) {
-//			case 1:
-//				break;
-//				
-//			case 2:
-//				int firstRegIndex = vmRegisters.getRegisterIndex(mSecond);
-//				int secondRegIndex = vmRegisters.getRegisterIndex(mThird);
-//				binaryInstruction.setRegisters(firstRegIndex, secondRegIndex);
-//				break;
-//				
-//			case 3: 	// Instruções 3 e 4 precisam de maior atenção devido às flags
-//				flagSetter(mSecond, integerFormat, binaryInstruction);
-//				
-//				int dispValue = toInteger (mSecond);
-//				binaryInstruction.setDisp(dispValue);
-//				break;
-//				
-//			case 4:
-//				flagSetter(mSecond, integerFormat, binaryInstruction);
-//				binaryInstruction.setFlagE();
-//				
-//				int addressValue = toInteger (mSecond);
-//				binaryInstruction.setAddress(addressValue);
-//				break;
-//			}
-//			
-//			vmMemory.writeInstruction(memoryPointer, binaryInstruction.getInstruction(), integerFormat);
-//			if (integerFormat!= 4)
-//				memoryPointer += 3;
-//			else
-//				memoryPointer += 6;
-//		}	
-//	}
-//}
-//}
-//
 

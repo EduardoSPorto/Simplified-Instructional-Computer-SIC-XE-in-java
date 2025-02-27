@@ -7,45 +7,70 @@ import java.util.function.LongConsumer;
 public class ObjectProgram {
 	String header;
 	List<String> text;
+	String tempText; // Salva escrita em outro lugar para permitir modificar as colunas 8 e 9 que referem-se ao tamanho da linha de texto
 	String end;
 	int textLines;
-	int textLineBytes;
+	int textColumn;
 	
 	
-	public ObjectProgram () {
-		header = "H";
+	public ObjectProgram (String name, String startAddress, String lenght) {
+		header = "H" + name + startAddress + lenght;
 		text = new ArrayList<>();
 		end = "E000000";
 		
 		text.add("T");
-		textLines = 1;
-		textLineBytes = 1;
+		textLines = 0;
+		textColumn = 1;
 	}
 	
-	public void defineName (String name) {
-		name = name.substring(0, 6);
-		if (name.length() < 6) {
-			name = to6BytesAdressingFormat(name);
-		}
-		this.header.concat(name);
-	}
-	
-	public void defineHeadingAddress (String address) {
-		if (address.length() < 6)
-			address = to6BytesAdressingFormat(address);
-		this.header.concat(address);
-	}
-	
-	public void addTextContent (String objectCode, String LOCCTR) {
-		LOCCTR = Integer.toHexString(Integer.parseInt(LOCCTR));
-		if (LOCCTR.length() < 6)
-			LOCCTR = to6BytesAdressingFormat(LOCCTR);
+	/*
+	 =================================== 
+	 ObjectProgram::addTextContent
+	 	Assume que o objectCode já está
+	 	em formato hexádecimal
+	 =================================== 
+	*/
+	public void addToText (String objectCode, int LOCCTR) {
+		String hexLOCCTR = Integer.toHexString(LOCCTR);
+		if (hexLOCCTR.length() < 6)
+			hexLOCCTR = to6BytesAdressingFormat(hexLOCCTR);
 		
-		if (textLineBytes == 1) {
-			text.get(textLines).concat(LOCCTR);
-			textLineBytes+=6;
+		if (textColumn == 1) {
+			text.get(textLines).concat(hexLOCCTR);
+			textColumn+=8;	// 6 colunas para endereço inicial, 2 Colunas para tamaho da linha (bytes)
+		}
+		else if ( (textColumn + objectCode.length() ) >= 68) {
+			finishTextLine(objectCode);
+			addToText (objectCode, LOCCTR);
+			return;
 		}
 		
+		tempText.concat(objectCode);
+		textColumn+=objectCode.length();
+	}
+	
+	public void addToText () {
+		if (textColumn == 1) 
+			return;
+		int objectCodeLenght = (textColumn - 9) / 2; 
+		text.get(textLines).concat(Integer.toHexString(objectCodeLenght));
+		text.get(textLines).concat(tempText);
+		
+		text.add("T");
+		textLines++;
+		textColumn = 1;
+		
+	}
+	
+	public void finishTextLine (String objectCode) {
+		int objectCodeLenght = (textColumn - 9) / 2; 
+		text.get(textLines).concat(Integer.toHexString(objectCodeLenght));
+		text.get(textLines).concat(tempText);
+		
+		// Começa nova linha de text
+		text.add("T");
+		textLines++;
+		textColumn = 1;
 	}
 	
 	public String to6BytesAdressingFormat (String oldAddressFormat) {

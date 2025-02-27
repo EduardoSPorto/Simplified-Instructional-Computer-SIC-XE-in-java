@@ -9,12 +9,12 @@ import java.util.Set;
 public class SicXeReservedWords {
 	private static Map<String, String[]> instructions;
 	private static Set<String> directives;
-	private static HashSet<String> symbols;
+	private static HashSet<Character> symbols;
 	
 	static{
 		instructions = new 	HashMap<>();
 		directives = new HashSet<String>();
-		symbols = new HashSet <String> ();
+		symbols = new HashSet <Character> ();
 		
 		// Instruções
 		// Adiciona as instruções ao HashMap
@@ -67,11 +67,11 @@ public class SicXeReservedWords {
 		directives.add("RESW");
 		
 		//Simbolos
-		symbols.add(".");
-		symbols.add("$");
-		symbols.add(",");
-		symbols.add("@");
-		symbols.add("#");
+		symbols.add('.');
+		symbols.add('$');
+		symbols.add(',');
+		symbols.add('@');
+		symbols.add('#');
 	}
 	
 	
@@ -82,7 +82,18 @@ public class SicXeReservedWords {
 		return directives.contains(token);
 	}
 	public static boolean isReservedSymbol (String token) {
+		return symbols.contains(token.charAt(0));
+	}
+	public static boolean isReservedSymbol (char token) {
 		return symbols.contains(token);
+	}
+	public static boolean hasReservedSymbol (String token) {
+		boolean contains = false;
+		for (char c: token.toCharArray()) {
+			if (symbols.contains(c));
+				contains = true;
+		}
+		return contains;
 	}
 	public static boolean isReservedWord (String token) {
 		return isInstruction(token) || isDirective(token) || isReservedSymbol(token);
