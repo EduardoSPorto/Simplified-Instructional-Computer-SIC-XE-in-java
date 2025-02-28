@@ -98,6 +98,9 @@ public class UserInstruction {
 		
 		return address;
 	}
+	public int getFormat () {
+		return this.format;
+	}
 	
 	public int[] getRegisters () {
 		int [] registers = new int[2];
@@ -166,6 +169,10 @@ public class UserInstruction {
 	// Métodos de conversão
 	@Override
 	public String toString() {
+		return (Integer.toHexString(this.toInteger()));
+	}
+	
+	public String toBinaryString() {
 		if (format == 2)
 			return "Instrução: " + String.format("%16s", Integer.toBinaryString(this.toInteger())).replace(' ', '0');
 		else if (format == 3)

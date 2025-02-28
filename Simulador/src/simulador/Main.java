@@ -3,25 +3,41 @@ package simulador;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
+import simulador.assembler.Assembler;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.Operations;
 
 public class Main {
+	
+	
+	/*
+	=======================
+	main
+	======================
+	 */
     public static void main(String[] args) {
         Memory vmMemory = new Memory(1025);
         Registers vmRegisters = new Registers();
         Operations vmOperations = new Operations(vmMemory, vmRegisters);
         InstructionSet vmInstructionSet = new InstructionSet(vmOperations);
         
-        String[] input = {"ADD #5", "STA 100", "ADD #10", "STA 103"};
+        String[] input = {"PROG START","ONE WORD 1", "ZERO WORD 0", "BYTE C'ola'", "LDA ZERO", "ADD ONE", "END"};
         
         Assembler assembler = new Assembler(input, vmMemory, vmInstructionSet, vmRegisters);
         
-        VMSimulator vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
+//        VMSimulator vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
         
-        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
+//        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
     }
     
+    
+    
+    
+    /*
+    =======================
+    CreateAndShowGUI
+    ======================
+   */
     private static void createAndShowGUI(Registers vmRegisters, Memory vmMemory) {
         // Create main frame
         JFrame frame = new JFrame("SIC VM - Register & Memory Monitor");
