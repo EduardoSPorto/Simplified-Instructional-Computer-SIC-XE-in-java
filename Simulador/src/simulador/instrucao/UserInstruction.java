@@ -118,14 +118,14 @@ public class UserInstruction {
 		return false;
 	}
 	public boolean isIndirect () {
-		int mask = 0b00000010;
+		int mask = 0b00000011;
 		int flags = this.instruction[0]&mask;
 		if (flags == 0b00000010)
 			return true;
 		return false;
 	}
 	public boolean isImmediate () {
-		int mask = 0b00000001;
+		int mask = 0b00000011;
 		int flags = this.instruction[0]&mask;
 		if (flags == 0b00000001)
 			return true;
