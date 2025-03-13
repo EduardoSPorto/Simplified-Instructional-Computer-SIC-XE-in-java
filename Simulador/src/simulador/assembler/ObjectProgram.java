@@ -41,11 +41,7 @@ public class ObjectProgram {
 		refExtrn = new ArrayList <>();
 		modRecord = new ArrayList<>();
 		end = "E"+startAddress; // Por padrão é ele, mas se for indicado um novo endereço, então substitui
-		
-		text.add("T");
-		tempText = "";
-		textLine = 0;
-		textColumn = 1;
+	
 	}
 	
 	
@@ -61,47 +57,15 @@ public class ObjectProgram {
 	 	
 	 =================================== 
 	*/
-	public void addToText (String objectCode, int type, int LOCCTR) {
+	public void addToText (String objectCode, int type, int LOCCTR, char relocMode) {
 		String hexLOCCTR = Integer.toHexString(LOCCTR);
 		if (hexLOCCTR.length() < 6)
 			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR);
 		if (objectCode.length() < (type * 2))
 			objectCode = DataUtils.toNBitsAddressingFormat(objectCode, type*2);
 		
-		if (textColumn == 1) {
-			text.set(textLine, text.get(textLine).concat(hexLOCCTR));
-			textColumn+= 9 ;	// 6 colunas para endereço inicial, 2 Colunas para tamaho da linha (bytes)
-		}
-		else if ( (textColumn + objectCode.length() ) >= 68 ) {
-			finishTextLine();
-			startNewTextLine();
-			addToText (objectCode, type, LOCCTR);
-			return;
-		}
+		text.add("T"+hexLOCCTR+relocMode+objectCode);
 		
-		tempText = tempText.concat(objectCode);
-		textColumn+=objectCode.length();
-		
-	}
-	public void finishTextLine () {
-		if (textColumn == 1) 
-			return;
-		
-		int objectCodeLenght = (textColumn - 9) / 2;
-		String hexCodeLenght = Integer.toHexString(objectCodeLenght);
-		if (hexCodeLenght.length() == 1)
-			hexCodeLenght = "0" + hexCodeLenght;
-		
-		String t1 = hexCodeLenght + " " + this.tempText;		
-		
-		text.set( textLine, text.get(textLine).concat(" "+t1) );
-		
-	}
-	public void startNewTextLine () {
-			text.add("T");
-			tempText = "";
-			textLine++;
-			textColumn = 1;
 	}
 	
 	public void addModificationRecord (int LOCCTR, int hbLenght, char modFlag, String externalSymbol) {
@@ -165,11 +129,9 @@ public class ObjectProgram {
 	
 	
 	public void endObjectProg (SymbolTable SYMTAB) {
-		this.finishTextLine();
 		this.saveOnFile(SYMTAB);
 	}
 	public void endObjectProg (String StartingAddress, SymbolTable SYMTAB) {
-		this.finishTextLine();
 		this.end = "E" + StartingAddress;
 		this.saveOnFile(SYMTAB);
 	}
@@ -247,11 +209,8 @@ public class ObjectProgram {
 	}
 	
 	public void writeText (FileWriter writer) throws IOException {
-		
-		for(int i = 0; i <= this.textLine; i++) {
-			String tLine = this.text.get(i);
-			if (tLine.length() != 1)
-				writer.write(this.text.get(i)+"\n");
+		for(String textLine : this.text) {
+			writer.write(textLine);
 		}
 	}
 	

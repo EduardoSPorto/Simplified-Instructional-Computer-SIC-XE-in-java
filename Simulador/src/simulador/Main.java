@@ -15,6 +15,7 @@ public class Main {
 	static InstructionSet vmInstructionSet; 
 	static Assembler assembler;
 	static Loader loader;
+	static VMSimulator vmSimulator;
 	
 	/*
 	=======================
@@ -26,13 +27,10 @@ public class Main {
         vmRegisters = new Registers();
         vmOperations = new Operations(vmMemory, vmRegisters);
         vmInstructionSet = new InstructionSet(vmOperations);
-        loader = new Loader (vmMemory);
-        
-        String[] input = {"PROG START","ONE WORD 1", "ZERO WORD 0", "BYTE C'ola'", "LDA ZERO", "ADD ONE", "END"};
-        
+        vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
         assembler = new Assembler(vmMemory, vmInstructionSet, vmRegisters);
+        loader = new Loader (vmMemory, vmSimulator);
         
-//        VMSimulator vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
         
 //        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
     }

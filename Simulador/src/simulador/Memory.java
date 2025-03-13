@@ -63,6 +63,7 @@ public class Memory {
         }
     	memory[address + b] = (byte) (value & 0xFF);
     }
+   
     
     public int getMemorySize () {
     	return this.size;
@@ -140,4 +141,22 @@ public class Memory {
     	
     	return startAddress;
     }
+
+	public void update(int address, int bytes, int relocValue) {
+		if (address < 0 || address + bytes >= memory.length)
+    		throw new IndexOutOfBoundsException("Endereço inválido.");
+    	int value = 0;
+    	for ( int i=0; i<bytes; i++ ) {
+    		value <<= 8;
+    		value += (int) memory[address+i] & 0xFF;
+    	}
+    	
+    	value += relocValue;
+    	
+    	for ( int i=bytes-1; i>=0; i-- ) {
+    		memory[address+i] = (byte) (value & 0xFF);
+    		value >>=8;
+    	}
+    	
+	}
 }

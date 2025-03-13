@@ -25,7 +25,6 @@ public class VMSimulator {
 		this.vmInstructionSet = vmInstructionSet;
 		
 		vmRegisters.setRegisterValue("PC", 0);
-		operate();
 	}
 	
 	
@@ -34,13 +33,14 @@ public class VMSimulator {
 	 VMSimulator::operate
 	 ===================================
 	*/	
-	public void operate () {
+	public void operate (int ipla, int programSize) {
 		int memoryValue, opcode, eFlag;
 		String format;
 		UserInstruction currentInstruction;
 		byte [] instruction; 
+		this.vmRegisters.setRegisterValue("PC", ipla);
 		
-		while (vmMemory.isEmpty(vmRegisters.getRegisterValue("PC")) == false) {
+		while (vmRegisters.getRegisterValue("PC") < programSize) {
 			
 			memoryValue = vmMemory.readWord(vmRegisters.getRegisterValue("PC"));
 			vmRegisters.setRegisterValue("PC", vmRegisters.getRegisterValue("PC") + 3);

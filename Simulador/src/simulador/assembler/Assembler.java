@@ -323,8 +323,6 @@ public class Assembler {
 					
 					this.listLine(mColumns, Lline++, LOCCTR);
 					
-					objectProgram.finishTextLine();
-					objectProgram.startNewTextLine();
 					if (opcode.equals("RESW")) 
 						LOCCTR += (3*value);
 					else if (opcode.equals("RESB"))
