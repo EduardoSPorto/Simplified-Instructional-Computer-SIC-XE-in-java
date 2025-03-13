@@ -1,11 +1,21 @@
 package simulador;
 
+
+import java.util.ArrayList;
+import java.util.List;
+
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.UserInstruction;
+
+class AllocRecord {
+	int[] bounds = new int[2];
+	int size;
+}
 
 public class Memory {
     private byte[] memory;
     private int size;
+    List<AllocRecord> allocatedSpots;
     
 
     public Memory(int size) {
@@ -16,6 +26,7 @@ public class Memory {
         }
         this.size = size;
         memory = new byte[size];
+        allocatedSpots = new ArrayList<AllocRecord>();
     }
 
     // Leitura de palavras de 24 bits
@@ -80,9 +91,6 @@ public class Memory {
     }
     
     
-    
-    
-    
     /*
     =======================
     isEmpty
@@ -104,5 +112,32 @@ public class Memory {
     	if (integerValue == 0)
     		return true;
     	return false;
+    }
+    
+    public int alloc (int size) {
+    	Integer startAddress = 0;
+    	
+    	if (allocatedSpots.size()>0) {
+    		boolean found = false;
+    		int index = 0;
+    		while (!found) {
+    			AllocRecord rec = allocatedSpots.get(index);
+    			int add = startAddress;
+    			boolean inMidle = add+size >= rec.bounds[0] || (add+size >= rec.bounds[1] && add < rec.bounds[1]); 
+    			if ( inMidle) {
+    				startAddress = rec.bounds[1]+1;
+    			} else {
+    				found = true;
+    			}
+    		}
+    		AllocRecord newRec = new AllocRecord();
+    		newRec.bounds[0] = startAddress;
+    		newRec.bounds[1] = startAddress + size;
+    		newRec.size = size;
+    		allocatedSpots.add(newRec);
+    	} else
+    		startAddress = 0;
+    	
+    	return startAddress;
     }
 }

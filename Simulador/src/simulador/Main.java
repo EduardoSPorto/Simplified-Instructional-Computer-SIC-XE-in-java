@@ -6,6 +6,7 @@ import javax.swing.table.DefaultTableModel;
 import simulador.assembler.Assembler;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.Operations;
+import simulador.linker.Loader;
 
 public class Main {
 	static Memory vmMemory;
@@ -13,6 +14,7 @@ public class Main {
 	static Operations vmOperations; 
 	static InstructionSet vmInstructionSet; 
 	static Assembler assembler;
+	static Loader loader;
 	
 	/*
 	=======================
@@ -24,6 +26,7 @@ public class Main {
         vmRegisters = new Registers();
         vmOperations = new Operations(vmMemory, vmRegisters);
         vmInstructionSet = new InstructionSet(vmOperations);
+        loader = new Loader (vmMemory);
         
         String[] input = {"PROG START","ONE WORD 1", "ZERO WORD 0", "BYTE C'ola'", "LDA ZERO", "ADD ONE", "END"};
         
