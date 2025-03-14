@@ -2,10 +2,7 @@ package simulador.assembler;
 
 import java.io.*;
 import java.util.*;
-	//Sobre o MacroProcessor, considerando o tanto desse codigo que não é meu, tudo só no MacroProcessor de maneira monolitca
-	//Não consigo testar um monte de coisa pois não existe ligador
-	//Também tem o testeMacroProcessso, eu prefiro fazer os testes em seus arquivos separados então ele tem o propio arquivo java
-	//- da pra deletar ele antes de enviar o trabalho
+
 public class MacroProcessor {
 	
     // Tabela de definições de macro: mnemônico da macro -> definição
