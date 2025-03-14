@@ -7,19 +7,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 
-class DefRecordFormat {
-	public String symbol;
-	public String address;
-}
-//class RefRecordFormat {
-//	public String symbol;
-//}
-class ModRecordFormat {
-	String startAddress; // 6 Columns
-	String modifiableLenght; // 2 Columns -> Representa um Half Byte (4 bits)
-	char modFlag;	// + or -
-	String externalSymbol; 	// Ex: BUFFER ->  M00001805+^BUFFER^   
-}
+
 
 
 public class ObjectProgram {
@@ -28,9 +16,7 @@ public class ObjectProgram {
 	private List<DefRecordFormat> defExtrn;
 	private List<String> refExtrn;
 	private List<ModRecordFormat> modRecord;
-	private String tempText; // Salva escrita em outro lugar para permitir modificar as colunas 8 e 9 que referem-se ao tamanho da linha de texto
 	private String end;
-	private int textLine, textColumn;
 	
 	
 	
@@ -60,9 +46,9 @@ public class ObjectProgram {
 	public void addToText (String objectCode, int type, int LOCCTR, char relocMode) {
 		String hexLOCCTR = Integer.toHexString(LOCCTR);
 		if (hexLOCCTR.length() < 6)
-			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR);
+			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR, true);
 		if (objectCode.length() < (type * 2))
-			objectCode = DataUtils.toNBitsAddressingFormat(objectCode, type*2);
+			objectCode = DataUtils.toNBitsAddressingFormat(objectCode, type*2, true);
 		
 		text.add("T"+hexLOCCTR+relocMode+objectCode);
 		
@@ -71,7 +57,7 @@ public class ObjectProgram {
 	public void addModificationRecord (int LOCCTR, int hbLenght, char modFlag, String externalSymbol) {
 		String hexLOCCTR = Integer.toHexString(LOCCTR);
 		if (hexLOCCTR.length() < 6)
-			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR);
+			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR, true);
 		String hexLenght = Integer.toHexString(hbLenght);
 		if (hexLenght.length() == 1)
 			hexLenght = "0".concat(hexLenght);
@@ -84,7 +70,7 @@ public class ObjectProgram {
 
 	}
 	
-	public void addToDefine (String symbol) {
+	public void addToDefine (String symbol, String hexAddress) {
 		DefRecordFormat entry = new DefRecordFormat();
 		
 		
@@ -92,16 +78,19 @@ public class ObjectProgram {
 			symbol = symbol.substring(0,6);
 		else if (symbol.length()<6)
 			symbol = String.format("%-6s", symbol);
-			
+		
+		if (hexAddress.length() < 6 )
+			hexAddress = DataUtils.to6BitsAdressingFormat(hexAddress, true);
 		
 		entry.symbol = symbol;
+		entry.address = hexAddress;
 		
 		this.defExtrn.add(entry);
 	}
 	public void setDefineRecordAddress (String Symbol, int LOCCTR) {
 		String hexLOCCTR = Integer.toHexString(LOCCTR);
 		if (hexLOCCTR.length() < 6)
-			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR);
+			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR, true);
 		
 		DefRecordFormat entry = new DefRecordFormat();
 		entry.symbol = Symbol;
@@ -185,7 +174,7 @@ public class ObjectProgram {
 			DefRecordFormat entry = defExtrn.get(i);
 			String t1 = entry.symbol;
 			t1 = t1.concat(entry.address);
-			buffer = buffer.concat(" " + t1 );
+			buffer = buffer.concat(t1 );
 		}
 		
 		if (i > 0) {
@@ -201,7 +190,7 @@ public class ObjectProgram {
 		buffer = "R";
 		for ( i=0; i<this.refExtrn.size(); i++ ) {
 			String t1 = refExtrn.get(i);
-			buffer = buffer.concat(" " + t1);
+			buffer = buffer.concat(t1);
 		}
 		if ( i>0 ) {
 			writer.write(buffer + "\n");
@@ -210,7 +199,7 @@ public class ObjectProgram {
 	
 	public void writeText (FileWriter writer) throws IOException {
 		for(String textLine : this.text) {
-			writer.write(textLine);
+			writer.write(textLine + "\n");
 		}
 	}
 	
@@ -219,9 +208,9 @@ public class ObjectProgram {
 		for ( int i=0; i<this.modRecord.size(); i++ ) {
 			ModRecordFormat entry = this.modRecord.get(i);
 			String t1 = "M";
-			t1 = t1.concat(	entry.startAddress + " " + 
-							entry.modifiableLenght + " " +
-							entry.modFlag + " " +
+			t1 = t1.concat(	entry.startAddress +  
+							entry.modifiableLenght +
+							entry.modFlag + 
 							entry.externalSymbol);
 			writer.write(t1 + "\n");
 		}
@@ -231,7 +220,27 @@ public class ObjectProgram {
 
 
 
-
+class DefRecordFormat {
+	public String symbol;
+	public String address;
+	
+	public String toString () {
+		return symbol + address;
+	}
+}
+//class RefRecordFormat {
+//	public String symbol;
+//}
+class ModRecordFormat {
+	String startAddress; // 6 Columns
+	String modifiableLenght; // 2 Columns -> Representa um Half Byte (4 bits)
+	char modFlag;	// + or -
+	String externalSymbol; 	// Ex: BUFFER ->  M00001805+^BUFFER^   
+	
+	public String toString() {
+		return startAddress + modifiableLenght + modFlag + externalSymbol;
+	}
+}
 
 /*
  * H (6 col | ProgName) (6 Col | Endereço Inicial) ( 6 | Tamanho em bytes (Hex) ) 

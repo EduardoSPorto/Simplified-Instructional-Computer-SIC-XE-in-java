@@ -22,10 +22,11 @@ import simulador.instrucao.UserInstruction;
 import simulador.instrucao.VMInstruction;
 
 class IntermediateFile {
-	String [] mnemonics;
+	List <String> mnemonics;
 	List <String> DefSymbols;
 	List <String> RefSymbols;
 }
+
 
 public class Assembler {
 	Memory vmMemory;
@@ -110,117 +111,123 @@ public class Assembler {
 	 ===================================
 	*/
 	public void firstPass (String[] mnemonics, SymbolTable SYMTAB, IntermediateFile intermediateFile) {
-		int index = 0;
+		int counter = 0;
 		this.programLenght = 0;		
-		intermediateFile.mnemonics = new String[mnemonics.length];
+		intermediateFile.mnemonics = new ArrayList<>();
 		
-		String[] mColumns = mnemonics[index++].split(" ");
+		String[] mColumns = mnemonics[counter++].split(" ");
+		
 		while (mColumns[0].charAt(0) == '.')
-			mColumns = mnemonics[index++].split(" ");
+			mColumns = mnemonics[counter++].split(" ");
 		
-		String label = "";
-		String opcode;
-		String address = "";
-		if (mColumns[0].equals("START")) {
-			opcode = mColumns[0];
-			if (mColumns.length >= 2)
-				address = mColumns[1];
-		}
-		else {
-			label = mColumns[0];
-			opcode = mColumns[1];
-			if (mColumns.length >= 3)
-				address = mColumns[2];
-		}
+		ControlData controlData = new ControlData();
 		
-		// Inicializando com Start e definindo endereços iniciais
-		if (opcode.equals("START")) {
-			if ( address.isBlank())  {
+		this.processInstruction(mColumns, controlData);
+
+		if (controlData.opcode.equals("START")) {
+			boolean startAddressSpecified = controlData.operandA != null;
+			
+			if ( startAddressSpecified )  {
+				startAddress = Integer.parseInt(controlData.operandA);
+				this.LOCCTR = startAddress;
+			} else {
 				startAddress = 0;
 				this.LOCCTR = 0;
 			}
-			else { // Se START não especifica endereço, então endereço inicial é zero
-				startAddress = Integer.parseInt(address);
-				this.LOCCTR = startAddress;
-			}
 			
-			intermediateFile.mnemonics[0] = String.join(" ", mColumns);
+			intermediateFile.mnemonics.add( String.join(" ", mColumns) ) ;
 		}
 		else
 			throw new IllegalArgumentException("Lack of initialization with START directive");
 		
-		
-		// Variáveis para facilitar referenciamento
-		boolean hasLabel = false;
-		boolean isDirective = false;
-		boolean isInstruction = false;
-		
-		for (int i = index ; opcode.equals("END") == false ; i++) {
-
-			// Inicia Leitura da próxima linha
-			mColumns = mnemonics[i].split(" ");
-			hasLabel = this.isLabel(mColumns[0]);
-			if (hasLabel) {
-				label  = mColumns[0];
-				opcode = mColumns[1];
-			}
-			else {
-				opcode = mColumns[0];
-				label = "";
-			}		
-			if (opcode.equals("END"))
-				break;
+		mColumns = mnemonics[counter++].split(" ");
+		this.processInstruction(mColumns, controlData);
+				
+		while (controlData.opcode.equals("END") == false) {
+			boolean ignoreLine = false;
 			
-			isDirective = this.isDirective(opcode);
-			isInstruction = this.isInstruction(opcode);
-			boolean extended = false;
-			
-			if (mColumns[0].contains(".")) { 				// Pula linhas de comentário
-				continue;
+			if (mColumns[0].contains(".")) { 				
+				ignoreLine = true;
 			}
 			
-			if (opcode.equals("EXTREF")) {
+			// Add ExtREF and ExtDEF to Intermediate File
+			if (controlData.opcode.equals("EXTREF")) {
 				for ( int j = 1; j < mColumns.length; j ++) {
 					SYMTAB.insert(mColumns[j], null, true);
 					intermediateFile.RefSymbols.add(mColumns[j]);
 				}
-				continue;
-			} else if ( opcode.equals("EXTDEF") ) {
+				ignoreLine = true;
+			} else if ( controlData.opcode.equals("EXTDEF") ) {
 				for ( int j = 1; j < mColumns.length; j ++) {
 					SYMTAB.insert(mColumns[j], null, true);
 					intermediateFile.DefSymbols.add(mColumns[j]);
 				}
-				continue;
+				ignoreLine = true;
 			}
 			
-			
-			if( hasLabel ) { 
-				if (SYMTAB.contains(label)) 
-					if (SYMTAB.isExtern(label)) {
-						SYMTAB.modify(label, this.LOCCTR, extended);
+			// Verify for other Labels
+			if (ignoreLine == false) {
+				boolean extended;
+				if( controlData.hasLabel ) { 
+					if (SYMTAB.contains( controlData.label )) { 
+						if (SYMTAB.isExtern( controlData.label )) {
+							SYMTAB.modify( controlData.label, this.LOCCTR, true);
+						} else
+							throw new IllegalArgumentException("Duplicated Label definition");
+					} else {
+						SYMTAB.insert(controlData.label, this.LOCCTR, false);
 					}
-					else
-						throw new IllegalArgumentException("Duplicated Label definition");
-				else {
-					SYMTAB.insert(label, this.LOCCTR, false);
+					extended = verifyOpcode (controlData.opcode, controlData.isDirective);
+					updateLOCCTR(controlData.opcode, mColumns[2], controlData.isInstruction, extended);	
+					mColumns = this.eraseLabel(mColumns); 			// Remove o Label do código texto, Montador conhece ele pela tabela de símbolos
 				}
-				extended = verifyOpcode (opcode, isDirective);
-				updateLOCCTR(opcode, mColumns[2], isInstruction, extended);	
-				mColumns = this.eraseLabel(mColumns); 			// Remove o Label do código texto, Montador conhece ele pela tabela de símbolos
+				else { 	
+					extended = verifyOpcode (controlData.opcode, controlData.isDirective);
+					updateLOCCTR(controlData.opcode, mColumns[1], controlData.isInstruction, extended);
+				}
+				// Salva no arquivo intermediario após atualizar tabela de símbolos e remover os labels do começo.
+				intermediateFile.mnemonics.add(String.join(" ", mColumns));				
 			}
-			else { 	
-				extended = verifyOpcode (opcode, isDirective);
-				updateLOCCTR(opcode, mColumns[1], isInstruction, extended);
-			}
-			
-			// Salva no arquivo intermediario após atualizar tabela de símbolos e remover os labels do começo.
-			intermediateFile.mnemonics[index++] = String.join(" ", mColumns);
+			mColumns = mnemonics[counter++].split(" ");
+			this.processInstruction(mColumns, controlData);
+
 		}
 		
-		intermediateFile.mnemonics[index] = String.join(" ", mColumns);
+		intermediateFile.mnemonics.add( String.join(" ", mColumns) );
 		this.programLenght = this.LOCCTR - startAddress; 
 	}
 	
+	
+	public void processInstruction (String[] mnemonics, ControlData controlData) {
+		controlData.hasLabel = this.isLabel(mnemonics[0]);
+		if (controlData.hasLabel) {
+			controlData.label 	= mnemonics[0];
+			controlData.opcode 	= mnemonics[1];
+			if (mnemonics.length == 3)
+				controlData.operandA= mnemonics[2];
+			if (mnemonics.length == 4)
+				controlData.operandB = mnemonics[3];
+			else
+				controlData.operandB = "";	
+		} else {
+			controlData.opcode 	= mnemonics[0];
+			controlData.label 	= "";
+			if (mnemonics.length == 2)
+				controlData.operandA= mnemonics[1];
+			if (mnemonics.length == 3)
+				controlData.operandB = mnemonics[2];
+			else
+				controlData.operandB = "";
+		}
+		if (this.isDirective(controlData.opcode)) {
+			controlData.isDirective = true;
+			controlData.isInstruction = false;
+		} else {
+			controlData.isInstruction = true;
+			controlData.isDirective = false;
+		}
+	}
+
 	public boolean verifyOpcode (String opcode, boolean isDirective) {
 		boolean extended = false;
 		if (opcode.contains("+")) {
@@ -287,18 +294,19 @@ public class Assembler {
 		System.out.println("-------------------------------------------------------------------------------------------------------------------------------");
 		
 		//Escrita cabeçalho - INICIO
-		String [] mColumns = intermediateFile.mnemonics[index++].split(" ");
+		String [] mColumns = intermediateFile.mnemonics.removeFirst().split(" ");
 		String name = "";
 		if (!SicXeReservedWords.isReservedWord(mColumns[0]))
 			name = mColumns[0];
 		
-		objectProgram = new ObjectProgram(	String.format("%-6s", name).replace(' ', '0'), 
+		objectProgram = new ObjectProgram(	String.format("%-6s", name), 
 											String.format("%6s", Integer.toHexString(startAddress)).replace(' ', '0'), 
 											String.format("%6s", Integer.toHexString(programLenght)).replace(' ', '0')	);
 		// Escrita de Cabeçalho - FIM
 		// Escrita de DEF e REF - INICIO
 		for (int i = 0; i < intermediateFile.DefSymbols.size() ; i ++) {
-			objectProgram.addToDefine(intermediateFile.DefSymbols.get(i));
+			String symbol = intermediateFile.DefSymbols.get(i);
+			objectProgram.addToDefine(symbol, SYMTAB.getHexAddress(symbol));
 		}
 		for ( int i=0; i<intermediateFile.RefSymbols.size(); i++ ) {
 			objectProgram.addToRef( intermediateFile.RefSymbols.get(i) );
@@ -308,7 +316,7 @@ public class Assembler {
 	
 		// Escrita de Texto - INICIO
 		String opcode = "";
-		mColumns = intermediateFile.mnemonics[index].split(" ");
+		mColumns = intermediateFile.mnemonics.removeFirst().split(" ");
 		opcode = mColumns[0];
 		if (opcode.charAt(0) == '+') 
 			opcode = opcode.substring(1);
@@ -316,8 +324,8 @@ public class Assembler {
 		do {
 			if (SicXeReservedWords.isDirective(opcode)) {
 				int value = 0;
-				if (opcode.equals("BYTE") == false)
-					value = Integer.parseInt(mColumns[1]);
+				if (opcode.equals("BYTE") == false)			// Byte tem campo com letras
+					value = Integer.parseInt(mColumns[1]); 
 				
 				if ( opcode.equals("RESW") || opcode.equals("RESB") ) {
 					
@@ -328,26 +336,24 @@ public class Assembler {
 					else if (opcode.equals("RESB"))
 						LOCCTR+=value;		
 					
-				}
-				else { // if (isInstruction)
+				} else { 
 					
 					if (opcode.equals("WORD")) {
-						this.listLine(mColumns, Lline++, LOCCTR, DataUtils.to6BitsAdressingFormat(Integer.toHexString(value)));
+						this.listLine(mColumns, Lline++, LOCCTR, DataUtils.to6BitsAdressingFormat(Integer.toHexString(value), true));
 						
-						objectProgram.addToText(Integer.toHexString(value), 3,LOCCTR); // !!!!! Verificar se é necessário considerar definição de WORD por LABEL
+						objectProgram.addToText(Integer.toHexString(value), 3,LOCCTR, 'a'); // !!!!! Verificar se é necessário considerar definição de WORD por LABEL
 						LOCCTR += 3;
-					}
-					else if (opcode.equals("BYTE")) {
+					} else if (opcode.equals("BYTE")) {
 						int numBytes;
 						if (mColumns[1].charAt(0) == 'H') {
 							String hexValue = mColumns[1].substring(mColumns[1].indexOf('\'') + 1, mColumns[1].lastIndexOf('\'')); // Retira valor do format H'valor'
 							this.listLine(mColumns, Lline++, LOCCTR, hexValue);
 							numBytes = Math.ceilDiv(hexValue.length(), 2);
 							
-							objectProgram.addToText(hexValue, numBytes,LOCCTR );
+							objectProgram.addToText(hexValue, numBytes,LOCCTR, 'a');
 							LOCCTR += numBytes;
 						}
-						else {
+						else { // Byte como Caractere
 							String charValues =  mColumns[1].substring(mColumns[1].indexOf('\'') + 1, mColumns[1].lastIndexOf('\''));
 							String hexASCIIValue = "";
 							for (int i = 0; i < charValues.length(); i++) 
@@ -355,30 +361,37 @@ public class Assembler {
 							this.listLine(mColumns, Lline++, LOCCTR, hexASCIIValue);
 							numBytes = charValues.length();
 							
-							objectProgram.addToText(hexASCIIValue, numBytes, LOCCTR);
+							objectProgram.addToText(hexASCIIValue, numBytes, LOCCTR, 'a');
 							LOCCTR += numBytes;
 
 						}
 					}
 				}
-			}
-			else if (SicXeReservedWords.isInstruction(opcode)) {
+			} else if (SicXeReservedWords.isInstruction(opcode)) {
 				UserInstruction binaryInstruction = translateInstruction(mColumns, SYMTAB);
 				this.listLine(mColumns, Lline++, LOCCTR, binaryInstruction.toString());
 				int numBytes = binaryInstruction.getFormat();
 				
 				if ( binaryInstruction.isImmediate() ) {
-					objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR);
+					objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a');
 				} else {
-					objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR);
+					if (binaryInstruction.getFormat() == 2) {
+						objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a');						
+					} else {
+						if ( SicXeReservedWords.isReservedWord(mColumns[1]) )
+							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a');
+						else
+							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'r');
+						
+					}
 				}
 					
 				
 				LOCCTR += numBytes;
 			}
 			
-			index++;
-			mColumns = intermediateFile.mnemonics[index].split(" ");
+			
+			mColumns = intermediateFile.mnemonics.removeFirst().split(" ");
 			opcode = mColumns[0];
 			if (opcode.charAt(0) == '+') 
 				opcode = opcode.substring(1);					
@@ -458,9 +471,9 @@ public class Assembler {
 						modFlag = '+';
 					
 					if (extended)
-						objectProgram.addModificationRecord(LOCCTR+1, 5, modFlag, operandB);
+						objectProgram.addModificationRecord(LOCCTR+1, 5, modFlag, operandA);
 					else
-						objectProgram.addModificationRecord(LOCCTR+1, 3, modFlag, operandB);
+						objectProgram.addModificationRecord(LOCCTR+1, 3, modFlag, operandA);
 					
 					binaryInstruction.setAsDirect();
 					address = 0;
@@ -492,7 +505,7 @@ public class Assembler {
 	
 	public void listLine (String[] mColumns, int line, int loc, String ObjectCode) {
 		
-		String hexLoc = DataUtils.to6BitsAdressingFormat(Integer.toHexString(loc));
+		String hexLoc = DataUtils.to6BitsAdressingFormat(Integer.toHexString(loc), true);
 
 		String statmentA = mColumns[0];
 		String statmentB = "",statmentC = "";
@@ -504,7 +517,7 @@ public class Assembler {
 		System.out.println(String.format("%-7s %-7s %-30s %-10s", line*5, hexLoc, statmentA + " " + statmentB + " " + statmentC, ObjectCode));	
 	}
 	public void listLine (String[] mColumns, int line, int loc) {
-		String hexLoc = DataUtils.to6BitsAdressingFormat(Integer.toHexString(loc));
+		String hexLoc = DataUtils.to6BitsAdressingFormat(Integer.toHexString(loc), true);
 		String statmentA = mColumns[0];
 		String statmentB = "";
 		if (mColumns.length==2)
@@ -516,6 +529,8 @@ public class Assembler {
 	/*
 	 =================================== 
 	 Assembler::flagSetter
+	 	Ajusta flasg de Endereçamento e
+	 	relatividade
 	 =================================== 
 	*/
 	public void flagSetter (UserInstruction binaryInstruction, int format, String operand) {
@@ -547,14 +562,6 @@ public class Assembler {
 	}
 
 	
-	
-	
-	/*
-	 ===================================
-	 Assembler::toInteger
-	 	Coversão de string (decimal ou hexadecimal) para Integer
-	 ===================================
-	*/
 	public int toInteger (String strValue) {
 		strValue = strValue.split(",")[0];
 		if (strValue.contains("#") || strValue.contains("@"))
@@ -562,32 +569,29 @@ public class Assembler {
 		if (strValue.contains("X") || strValue.contains("x"))
 			return Integer.parseUnsignedInt(strValue.substring(1), strValue.lastIndexOf('\''));
 		return Integer.parseInt(strValue);
-	}
-	
-	
-	/*
-	 ===================================
-	 VMSimulator::isLabel
-	 ===================================
-	*/
-	boolean isLabel (String mnemonic) {
+		
+	}	
+	public boolean isLabel (String mnemonic) {
 		return ! (SicXeReservedWords.isReservedWord(mnemonic));
 	}
-	/*
-	 ===================================
-	 VMSimulator::isDirective
-	 ===================================
-	*/
-	boolean isDirective (String mnemonic) {
+	public boolean isDirective (String mnemonic) {
 		return SicXeReservedWords.isDirective(mnemonic);
 	}
-	/*
-	 ===================================
-	 VMSimulator::isDirective
-	 ===================================
-	*/
-	boolean isInstruction (String mnemonic) {
+	public boolean isInstruction (String mnemonic) {
 		return SicXeReservedWords.isInstruction(mnemonic);
 	}
+	
 }
+
+
+class ControlData {
+	public String operandB;
+	String label;
+	String opcode;
+	String operandA;
+	boolean hasLabel;
+	boolean isDirective;
+	boolean isInstruction;
+}
+
 

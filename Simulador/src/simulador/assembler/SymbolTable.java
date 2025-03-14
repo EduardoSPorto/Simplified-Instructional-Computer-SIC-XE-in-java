@@ -41,6 +41,7 @@ public class SymbolTable {
 		String hexAddress = Integer.toHexString(address);
 		SymbolData entry = new SymbolData();
 		entry.Address = hexAddress;
+		entry.extern = extern;
 		
 		table.replace(symbol, entry);
 	}

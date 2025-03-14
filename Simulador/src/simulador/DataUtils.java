@@ -12,13 +12,20 @@ public class DataUtils {
         return (byte) c;
     }
     
-    public static String to6BitsAdressingFormat (String oldAddressFormat) {
-		return String.format("%6s", oldAddressFormat).replace(' ', '0');
+    public static String to6BitsAdressingFormat (String oldAddressFormat, boolean fillWithZero) {
+    	if (fillWithZero)
+    		return String.format("%6s", oldAddressFormat).replace(' ', '0');
+    	else
+    		return String.format("%6s", oldAddressFormat);
 	}
-    public static String toNBitsAddressingFormat (String oldAddressFormat, int N) {
-    	return String.format ("%"+N+"s", oldAddressFormat).replace(' ', '0');
+    public static String toNBitsAddressingFormat (String oldAddressFormat, int N, boolean fillWithZero) {
+    	if (fillWithZero)
+    		return String.format ("%"+N+"s", oldAddressFormat).replace(' ', '0');
+    	else
+    		return String.format ("%-"+N+"s", oldAddressFormat);
     }
     public static String alternateNBitsAddressingFormat (String oldAddressFormat, int N) {
-    	return String.format ("%-"+N+"s", oldAddressFormat).replace(' ', '0');
-    }
+    		return String.format ("%-"+N+"s", oldAddressFormat).replace(' ', '0');
+    	
+    }	
 }
