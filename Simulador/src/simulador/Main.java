@@ -1,5 +1,7 @@
 package simulador;
 
+import java.io.IOException;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
@@ -22,14 +24,16 @@ public class Main {
 	main
 	======================
 	 */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         vmMemory = new Memory(1025);
         vmRegisters = new Registers();
         vmOperations = new Operations(vmMemory, vmRegisters);
         vmInstructionSet = new InstructionSet(vmOperations);
         vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
-        assembler = new Assembler(vmMemory, vmInstructionSet, vmRegisters);
         loader = new Loader (vmMemory, vmSimulator);
+        assembler = new Assembler(vmMemory, vmInstructionSet, vmRegisters, loader);
+        
+        assembler.execute();
         
         
 //        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));

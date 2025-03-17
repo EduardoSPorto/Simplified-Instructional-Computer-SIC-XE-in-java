@@ -43,14 +43,14 @@ public class ObjectProgram {
 	 	
 	 =================================== 
 	*/
-	public void addToText (String objectCode, int type, int LOCCTR, char relocMode) {
+	public void addToText (String objectCode, int type, int LOCCTR, char relocMode, char typeDef) {
 		String hexLOCCTR = Integer.toHexString(LOCCTR);
 		if (hexLOCCTR.length() < 6)
 			hexLOCCTR = DataUtils.to6BitsAdressingFormat(hexLOCCTR, true);
 		if (objectCode.length() < (type * 2))
 			objectCode = DataUtils.toNBitsAddressingFormat(objectCode, type*2, true);
 		
-		text.add("T"+hexLOCCTR+relocMode+objectCode);
+		text.add("T"+hexLOCCTR+relocMode+typeDef+objectCode);
 		
 	}
 	
@@ -221,8 +221,8 @@ public class ObjectProgram {
 
 
 class DefRecordFormat {
-	public String symbol;
-	public String address;
+	public String symbol; 	//6 Cplumns
+	public String address;	//6 Columns
 	
 	public String toString () {
 		return symbol + address;

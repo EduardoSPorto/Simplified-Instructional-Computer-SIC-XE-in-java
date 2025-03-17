@@ -20,6 +20,7 @@ import simulador.SicXeReservedWords;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.UserInstruction;
 import simulador.instrucao.VMInstruction;
+import simulador.linker.Loader;
 
 class IntermediateFile {
 	List <String> mnemonics;
@@ -32,20 +33,22 @@ public class Assembler {
 	Memory vmMemory;
 	InstructionSet vmInstructions;
 	Registers vmRegisters;
+	Loader loader;
 	int startAddress;
 	int LOCCTR;
 	int programLenght;
 	ObjectProgram objectProgram;
 	
-	public Assembler (Memory vmMemory, InstructionSet vmInstructionSet, Registers vmRegisters) {
+	public Assembler (Memory vmMemory, InstructionSet vmInstructionSet, Registers vmRegisters, Loader loader) {
 		this.vmMemory =vmMemory;
 		this.vmInstructions = vmInstructionSet;	
 		this.vmRegisters = vmRegisters;
-		
-		List< String[] > mnemonics = new ArrayList<>();
-		
+		this.loader = loader;	
+	}
 	
+	public void execute () throws IOException {
 		String fileName = "MASMAPRG";
+		List< String[] > mnemonics = new ArrayList<>();
 		int index = 0;
 		boolean fileExists = true;
 		while (fileExists) {
@@ -67,6 +70,7 @@ public class Assembler {
 			firstPass (mnemonics.get(i), SYMTAB, intermediateFile);
 			secondPass (intermediateFile, SYMTAB);
 		}
+		loader.firstPass();
 		
 	}
 	
@@ -341,7 +345,7 @@ public class Assembler {
 					if (opcode.equals("WORD")) {
 						this.listLine(mColumns, Lline++, LOCCTR, DataUtils.to6BitsAdressingFormat(Integer.toHexString(value), true));
 						
-						objectProgram.addToText(Integer.toHexString(value), 3,LOCCTR, 'a'); // !!!!! Verificar se é necessário considerar definição de WORD por LABEL
+						objectProgram.addToText(Integer.toHexString(value), 3,LOCCTR, 'a', 'd'); // !!!!! Verificar se é necessário considerar definição de WORD por LABEL
 						LOCCTR += 3;
 					} else if (opcode.equals("BYTE")) {
 						int numBytes;
@@ -350,7 +354,7 @@ public class Assembler {
 							this.listLine(mColumns, Lline++, LOCCTR, hexValue);
 							numBytes = Math.ceilDiv(hexValue.length(), 2);
 							
-							objectProgram.addToText(hexValue, numBytes,LOCCTR, 'a');
+							objectProgram.addToText(hexValue, numBytes,LOCCTR, 'a','d');
 							LOCCTR += numBytes;
 						}
 						else { // Byte como Caractere
@@ -361,7 +365,7 @@ public class Assembler {
 							this.listLine(mColumns, Lline++, LOCCTR, hexASCIIValue);
 							numBytes = charValues.length();
 							
-							objectProgram.addToText(hexASCIIValue, numBytes, LOCCTR, 'a');
+							objectProgram.addToText(hexASCIIValue, numBytes, LOCCTR, 'a', 'd');
 							LOCCTR += numBytes;
 
 						}
@@ -373,15 +377,15 @@ public class Assembler {
 				int numBytes = binaryInstruction.getFormat();
 				
 				if ( binaryInstruction.isImmediate() ) {
-					objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a');
+					objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a', 'i');
 				} else {
 					if (binaryInstruction.getFormat() == 2) {
-						objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a');						
+						objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a', 'i');						
 					} else {
 						if ( SicXeReservedWords.isReservedWord(mColumns[1]) )
-							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a');
+							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a', 'i');
 						else
-							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'r');
+							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'r', 'i');
 						
 					}
 				}
@@ -400,7 +404,8 @@ public class Assembler {
 			objectProgram.endObjectProg(mColumns[1], SYMTAB);
 		else
 			objectProgram.endObjectProg(SYMTAB);
-	
+		
+		
 		
 	}
 	
@@ -568,7 +573,7 @@ public class Assembler {
 			strValue = strValue.substring(1);
 		if (strValue.contains("X") || strValue.contains("x"))
 			return Integer.parseUnsignedInt(strValue.substring(1), strValue.lastIndexOf('\''));
-		return Integer.parseInt(strValue);
+		return Integer.parseInt(strValue,16);
 		
 	}	
 	public boolean isLabel (String mnemonic) {

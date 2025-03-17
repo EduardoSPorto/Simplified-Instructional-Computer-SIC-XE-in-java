@@ -8,7 +8,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedDeque;
 
+import simulador.DataUtils;
 import simulador.Memory;
 import simulador.VMSimulator;
 import simulador.assembler.ObjectProgram;
@@ -21,6 +23,7 @@ public class Loader {
 	private Memory vmMemory;
 	private VMSimulator vmSimulator;
 	private Map <String, String> TSG;
+	private Map <Integer, Integer> execAddresses;
 	private FinalObjProg linkedObjCode;
 	
 	
@@ -28,6 +31,7 @@ public class Loader {
 		this.vmMemory = memory;
 		this.vmSimulator = vmSimulator;
 		TSG = new HashMap<>();
+		execAddresses = new HashMap<>();
 	}
 	
 	
@@ -47,7 +51,7 @@ public class Loader {
 			String 	header = bufferedReader.readLine();
 			String 	mName = header.substring(1,7);
 			int 	mStartAddress = this.programSize + Integer.parseInt(header.substring(7,13));
-			String defineRecord = null;
+			String defineRecord = "";
 			String line;
 			
 			if (linkedObjCode == null) 
@@ -63,18 +67,14 @@ public class Loader {
 				line = bufferedReader.readLine();
 			}			
 			TSG.put(mName, Integer.toHexString(mStartAddress));
-			if (defineRecord.isBlank() == false) {
+			if (!defineRecord.isEmpty()) {
 				defineRecord = defineRecord.substring(1);
-				String[] definitions = defineRecord.split(" ");
-				
-				for(int i = 0; i < definitions.length; i+=2) {
-					String symbol = definitions[i];
-					String hexAddress = definitions[i+1];
-					if (programSize!=0) {
-						int updatedAddress = programSize + Integer.parseInt(hexAddress, 16);
-						hexAddress = Integer.toHexString(updatedAddress);
-					}					
-					TSG.put(symbol, hexAddress);
+				int count = 0;
+				while (count != defineRecord.length()) {
+				String symbol 		= defineRecord.substring(count, count+6);
+				String hexAddress 	= defineRecord.substring(count+6, count+12);
+				count+=12;
+				TSG.put(symbol.trim(), hexAddress);
 				}	
 			}
 			while (line.charAt(0) != 'E') {
@@ -82,21 +82,28 @@ public class Loader {
 				if (line.charAt(0) == 'T') {
 					line = updateAddress(line);
 					linkedObjCode.Text.add(line);
+				} else if (line.charAt(0) == 'M') {
+					line = updateAddress(line);
+					linkedObjCode.ModificationRecord.add(line);
 				}
 				line = bufferedReader.readLine();
 			}
 			linkedObjCode.END = line;
 			
-			this.programSize += Integer.parseInt(header.substring(13,19));
+			this.programSize += Integer.parseInt(header.substring(13,19),16);
 		}
 		
 		this.ipla = this.vmMemory.alloc(programSize);
+		this.cleanFiles();
+		this.secondPass();
 	}
 	
 	public String updateAddress (String line) {
+		char prefix = line.charAt(0);
 		String hexAddress = line.substring(1,7);
 		String updatedHexAddress = Integer.toHexString( Integer.parseInt(hexAddress,16) + this.programSize );
-		String updatedLine = "T" + updatedHexAddress + line.substring(7);
+		updatedHexAddress = DataUtils.to6BitsAdressingFormat(updatedHexAddress, true);
+		String updatedLine = prefix + updatedHexAddress + line.substring(7);
 		return updatedLine;
 	}
 	
@@ -114,13 +121,13 @@ public class Loader {
 	
 	public String[] getModules () {
 		List<String> modules = new ArrayList<String>();
-		final String FILEPATH = "ObjectProgs" + File.separator + "MASMAPRG";
-		final String EXTENSION = ",obj";
+		final String FILEPATH = "ObjectProgs" + File.separator + "Prog";
+		final String EXTENSION = ".obj";
 		int index = 0;
 		
 		while (new File(FILEPATH+index+EXTENSION).isFile()) {
-			index++;
 			modules.add(FILEPATH+index+EXTENSION);
+			index++;
 		}
 		
 		return modules.toArray(new String[0]);
@@ -128,30 +135,64 @@ public class Loader {
 
 
 	public void secondPass () {
-		int execStartPoint = this.ipla;
+		int execStartPoint = -1;
 		int segStart = this.ipla;
-		String line = linkedObjCode.Text.removeFirst();
+		String line ; 
+		int oldAddress;
+		int address;
+		boolean isInstruction;
 		
-		while( line.charAt(0) == 'T') {
-			int address = Integer.parseInt(line.substring(1,7));
-			String objectCode = line.substring(8);
+		// Writing Values in memory 						Se necessário, modifica valor de objectCode
+		line = linkedObjCode.Text.removeFirst();
+		address = Integer.parseInt(line.substring(1,7), 16);
+		while( linkedObjCode.Text.isEmpty() == false) {		// Aqui foi mantido o while, pq a iteração final é diferente
+			isInstruction = false;
+			String objectCode = line.substring(9);
 			
 			if (line.charAt(7) == 'r') {
 				Relocate(objectCode, segStart);
 			}
+			if (line.charAt(8) == 'i') {
+				if (execStartPoint == -1) 
+					execStartPoint = address;
+				isInstruction = true;
+			}
 			
 			int size =  objectCode.length()/2 ;
 			byte[] instruction = new byte[size];
-			for ( int i=0; i<size*2; i+=2) {
-				instruction[i] = Byte.valueOf(objectCode.substring(i,i+1), 16);
+			for ( int i=0, j = 0; j<size; i+=2, j++) {
+				instruction[j] = Byte.valueOf(objectCode.substring(i,i+2), 16);
 			}
 			this.vmMemory.writeInstruction(address, instruction, size);
 			
+			// update Values
+			oldAddress = address;
 			line = linkedObjCode.Text.removeFirst();
+			address = Integer.parseInt(line.substring(1,7), 16);
+			
+			if (isInstruction == true)
+				execAddresses.put(oldAddress, address);
+		} 
+		// Writing Last Line
+		isInstruction = false;
+		String objectCode = line.substring(9);
+		if (line.charAt(7) == 'r') {
+			Relocate(objectCode, segStart);
 		}
+		if (line.charAt(8) == 'i') {
+			isInstruction = true;
+		}
+		int size =  objectCode.length()/2 ;
+		byte[] instruction = new byte[size];
+		for ( int i=0, j = 0; j<size; i+=2, j++) {
+			instruction[j] = Byte.valueOf(objectCode.substring(i,i+2), 16);
+		}
+		this.vmMemory.writeInstruction(address, instruction, size);
+		execAddresses.put(address, -1);
 		
-		line = linkedObjCode.Text.removeFirst();
-		while (line.charAt(0) == 'M') {
+		// Update in memory the needed modifications
+		for (int i = 0; i <=  linkedObjCode.ModificationRecord.size(); i++) {	//Aqui foi usado for pq todas iterações são iguais, e o teste é mais intuitivo
+			line = linkedObjCode.ModificationRecord.removeFirst();
 			String hexAddress = line.substring(1,7);						//Actual memory Position
 			String halfBytes = line.substring(7,9);
 			int bytes = halfBytes.equals("03")? 2 : 3;
@@ -164,10 +205,13 @@ public class Loader {
 			
 			this.vmMemory.update(Integer.parseInt(hexAddress,16), bytes, symbolAddress);
 			
-			line = linkedObjCode.Text.removeFirst();
+			if (linkedObjCode.Text.isEmpty() == false)
+				line = linkedObjCode.Text.removeFirst();
+			else 
+				line = linkedObjCode.END;
 		}
 	
-		vmSimulator.operate(execStartPoint, ipla + this.programSize);
+		vmSimulator.operate(execStartPoint, this.execAddresses);
 		
 	}
 	
@@ -199,15 +243,10 @@ public class Loader {
 
 
 
-class RelocTableEntry {
-	String 	hexAddress;
-	String 	halfBytes;
-	char	modFlag;
-	String 	extSymbol;
-}
 class FinalObjProg {
 	String 			header = "H";
 	List<String>	Text = new ArrayList<String>();
+	List<String> 	ModificationRecord = new ArrayList<String>();
 	String			END = "E";
 	
 	public FinalObjProg (String name, String startAddress) {
@@ -220,6 +259,13 @@ class FinalObjProg {
 /*
  * Mudar Formato do Text
  * 
- * T <Endereço|6 cols> <Absoluto|Relativo> <ObjectCode>
+ * T <Endereço|6 cols><Absoluto|Relativo><ObjectCode>
+ * 
+ */
+
+/* H Endereço inicio Tamanho do segmento
+ * T 
+ * ...
+ * E 
  * 
  */
