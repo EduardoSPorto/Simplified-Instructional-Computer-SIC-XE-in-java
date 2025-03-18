@@ -4,15 +4,13 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import simulador.assembler.Assembler;
+import simulador.assembler.MacroProcessor;
+import simulador.assembler.MacroProcessorTest;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.Operations;
 
 public class Main {
-	static Memory vmMemory;
-	static Registers vmRegisters;
-	static Operations vmOperations; 
-	static InstructionSet vmInstructionSet; 
-	static Assembler assembler;
+	
 	
 	/*
 	=======================
@@ -20,17 +18,16 @@ public class Main {
 	======================
 	 */
     public static void main(String[] args) {
-        vmMemory = new Memory(1025);
-        vmRegisters = new Registers();
-        vmOperations = new Operations(vmMemory, vmRegisters);
-        vmInstructionSet = new InstructionSet(vmOperations);
+        Memory vmMemory = new Memory(1025);
+        Registers vmRegisters = new Registers();
+        Operations vmOperations = new Operations(vmMemory, vmRegisters);
+        InstructionSet vmInstructionSet = new InstructionSet(vmOperations);
         
         String[] input = {"PROG START","ONE WORD 1", "ZERO WORD 0", "BYTE C'ola'", "LDA ZERO", "ADD ONE", "END"};
-        
-        assembler = new Assembler(vmMemory, vmInstructionSet, vmRegisters);
-        
+        Assembler assembler = new Assembler(input, vmMemory, vmInstructionSet, vmRegisters);
 //        VMSimulator vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
-        
+        // Teste do macro
+        MacroProcessorTest.main(args);        
 //        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
     }
     
@@ -90,5 +87,5 @@ public class Main {
         
         frame.add(splitPane);
         frame.setVisible(true);
-    }
+    }    
 }
