@@ -278,16 +278,13 @@ class FinalObjProg {
 
 
 
-/*
- * Mudar Formato do Text
- * 
- * T <Endereço|6 cols><Absoluto|Relativo><ObjectCode>
- * 
- */
 
-/* H Endereço inicio Tamanho do segmento
- * T 
+/*
+ * H <Nome | 6Cols> <Endereço Inicial | 6Cols> <Tamanho | 6Cols>
+ * R <Nome do Simbolo | 6Cols> Repete...
+ * D <Nome do Simbolo | 6Cols> <Endereco | 6Cols> Repete...
+ * T <Endereço|6 cols><Absoluto|Relativo><ObjectCode>
  * ...
- * E 
- * 
+ * M <Endereço Modificavel | 6Cols> HalfBytes | 2Cols> <modFlg> <extSymbol>
+ * E <Endereço da primeira instrução executável | 6Cols
  */
