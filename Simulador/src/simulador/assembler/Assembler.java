@@ -345,7 +345,7 @@ public class Assembler {
 					if (opcode.equals("WORD")) {
 						this.listLine(mColumns, Lline++, LOCCTR, DataUtils.to6BitsAdressingFormat(Integer.toHexString(value), true));
 						
-						objectProgram.addToText(Integer.toHexString(value), 3,LOCCTR, 'a', 'd'); // !!!!! Verificar se é necessário considerar definição de WORD por LABEL
+						objectProgram.addToText(Integer.toHexString(value), 3,LOCCTR, 'a', 'd');
 						LOCCTR += 3;
 					} else if (opcode.equals("BYTE")) {
 						int numBytes;
@@ -384,8 +384,12 @@ public class Assembler {
 					} else {
 						if ( SicXeReservedWords.isReservedWord(mColumns[1]) )
 							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a', 'i');
-						else
-							objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'r', 'i');
+						else {
+							if (SYMTAB.isExtern(mColumns[1]))
+								objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'a', 'i');
+							else
+								objectProgram.addToText(binaryInstruction.toString(), numBytes, LOCCTR, 'r', 'i');
+						}
 						
 					}
 				}

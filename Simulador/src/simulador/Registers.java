@@ -56,8 +56,7 @@ public class Registers {
         if (index == null) {
             throw new IllegalArgumentException("Mnemônico inválido: " + mnemonic);
         }
-        if (value != -1)
-        	registers[index] = value & 0xFFFFFF; // Apenas 24 bits
+    	registers[index] = value & 0xFFFFFF; // Apenas 24 bits
     }
     public void setRegisterValue (int index, int value) {
     	if (index < 0 || index > 9) {

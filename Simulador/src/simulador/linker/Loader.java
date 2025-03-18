@@ -22,7 +22,7 @@ public class Loader {
 	private String[] modules;
 	private Memory vmMemory;
 	private VMSimulator vmSimulator;
-	private Map <String, String> TSG;
+	private Map <String, Integer> TSG;
 	private Map <Integer, Integer> execAddresses;
 	private FinalObjProg linkedObjCode;
 	
@@ -66,7 +66,7 @@ public class Loader {
 					defineRecord = line;
 				line = bufferedReader.readLine();
 			}			
-			TSG.put(mName, Integer.toHexString(mStartAddress));
+			TSG.put(mName, mStartAddress);
 			if (!defineRecord.isEmpty()) {
 				defineRecord = defineRecord.substring(1);
 				int count = 0;
@@ -74,7 +74,8 @@ public class Loader {
 				String symbol 		= defineRecord.substring(count, count+6);
 				String hexAddress 	= defineRecord.substring(count+6, count+12);
 				count+=12;
-				TSG.put(symbol.trim(), hexAddress);
+				int updatedAddress = Integer.parseInt(hexAddress,16) + this.programSize;
+				TSG.put(symbol.trim(), updatedAddress);
 				}	
 			}
 			while (line.charAt(0) != 'E') {
@@ -99,21 +100,36 @@ public class Loader {
 	}
 	
 	public String updateAddress (String line) {
-		char prefix = line.charAt(0);
-		String hexAddress = line.substring(1,7);
+		char prefix 		= line.charAt(0);
+		String hexAddress 	= line.substring(1,7);
+		String chars  		= line.substring(7, 9);
+		String opcode 		= line.substring(9);
+		
 		String updatedHexAddress = Integer.toHexString( Integer.parseInt(hexAddress,16) + this.programSize );
 		updatedHexAddress = DataUtils.to6BitsAdressingFormat(updatedHexAddress, true);
-		String updatedLine = prefix + updatedHexAddress + line.substring(7);
+		if (line.charAt(7) == 'r') {
+			String updatedOpcode = Integer.toHexString( Integer.parseInt(opcode,16) + this.programSize);
+			updatedOpcode = DataUtils.to6BitsAdressingFormat(updatedOpcode, true);
+			opcode = updatedOpcode;
+		}
+		
+		String updatedLine = prefix + updatedHexAddress + chars + opcode;
 		return updatedLine;
 	}
 	
+	public String Relocate(String instructionCode, int segStart) {
+		int instruction = Integer.parseInt(instructionCode, 16);
+		int relocated = instruction + segStart;
+		
+		return DataUtils.to6BitsAdressingFormat(Integer.toHexString(relocated), true);
+	}
 	
 	public int getModuleSize (String line) {
 		int value = -1;
 		String hexValue = line.substring(13,19);
 		try {
 			value = Integer.parseInt(hexValue);
-		} catch (Exception e) { //Só pra Debug 
+		} catch (Exception e) { 
 			System.err.println("Substring Limits poorly defined");
 		}
 		return value;
@@ -138,7 +154,7 @@ public class Loader {
 		int execStartPoint = -1;
 		int segStart = this.ipla;
 		String line ; 
-		int oldAddress;
+		int lastInstructionAddress = -1;
 		int address;
 		boolean isInstruction;
 		
@@ -149,8 +165,8 @@ public class Loader {
 			isInstruction = false;
 			String objectCode = line.substring(9);
 			
-			if (line.charAt(7) == 'r') {
-				Relocate(objectCode, segStart);
+			if (line.charAt(7) == 'r') { 					
+				objectCode = Relocate(objectCode, segStart);
 			}
 			if (line.charAt(8) == 'i') {
 				if (execStartPoint == -1) 
@@ -164,20 +180,21 @@ public class Loader {
 				instruction[j] = Byte.valueOf(objectCode.substring(i,i+2), 16);
 			}
 			this.vmMemory.writeInstruction(address, instruction, size);
+
+			if (isInstruction)
+				lastInstructionAddress = updateExecAddresses(lastInstructionAddress, address);
 			
 			// update Values
-			oldAddress = address;
 			line = linkedObjCode.Text.removeFirst();
 			address = Integer.parseInt(line.substring(1,7), 16);
 			
-			if (isInstruction == true)
-				execAddresses.put(oldAddress, address);
+				
 		} 
 		// Writing Last Line
 		isInstruction = false;
 		String objectCode = line.substring(9);
 		if (line.charAt(7) == 'r') {
-			Relocate(objectCode, segStart);
+			objectCode = Relocate(objectCode, segStart);
 		}
 		if (line.charAt(8) == 'i') {
 			isInstruction = true;
@@ -188,7 +205,9 @@ public class Loader {
 			instruction[j] = Byte.valueOf(objectCode.substring(i,i+2), 16);
 		}
 		this.vmMemory.writeInstruction(address, instruction, size);
-		execAddresses.put(address, -1);
+		if (isInstruction)
+			lastInstructionAddress = updateExecAddresses(lastInstructionAddress, address);
+		updateExecAddresses(lastInstructionAddress, -1); 
 		
 		// Update in memory the needed modifications
 		for (int i = 0; i <=  linkedObjCode.ModificationRecord.size(); i++) {	//Aqui foi usado for pq todas iterações são iguais, e o teste é mais intuitivo
@@ -199,7 +218,8 @@ public class Loader {
 			char modFlag = line.charAt(9);
 			
 			String extSymbol = line.substring(10);
-			int symbolAddress = Integer.parseInt(TSG.get(extSymbol), 16); 	// Only for relocation
+			int symbolAddress = TSG.get(extSymbol) ; 	// Only for relocation
+			symbolAddress += this.ipla;
 			if (modFlag == '-')
 				symbolAddress *= -1;
 			
@@ -215,13 +235,15 @@ public class Loader {
 		
 	}
 	
-	
-	public String Relocate(String instructionCode, int segStart) {
-		int instruction = Integer.parseInt(instructionCode, 16);
-		int relocated = instruction + segStart;
-		
-		return Integer.toHexString(relocated);
+	public int updateExecAddresses (int lastInstructionAddress, int newAddress) {
+		if (lastInstructionAddress == -1) {
+			return newAddress;
+		} else {
+			this.execAddresses.put(lastInstructionAddress, newAddress);
+			return newAddress;
+		}
 	}
+	
 	
 	public void cleanFiles () {
 		File dir = new File ("AssemblyCodes");

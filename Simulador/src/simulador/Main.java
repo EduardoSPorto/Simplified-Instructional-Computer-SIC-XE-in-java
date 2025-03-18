@@ -35,8 +35,8 @@ public class Main {
         
         assembler.execute();
         
-        
-//        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
+        System.out.println("Saiu");
+        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
     }
     
     
@@ -74,6 +74,7 @@ public class Main {
         int memorySize = vmMemory.getMemorySize();
         for (int addr = 0; addr <= memorySize - 3; addr += 3) {
             try {
+            	
                 int wordValue = vmMemory.readWord(addr);
                 memoryModel.addRow(new Object[]{
                     String.format("0x%04X", addr),
