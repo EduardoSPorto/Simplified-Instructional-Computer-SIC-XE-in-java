@@ -20,7 +20,7 @@ import simulador.SicXeReservedWords;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.UserInstruction;
 import simulador.instrucao.VMInstruction;
-import simulador.linker.Loader;
+import simulador.loader.Loader;
 
 class IntermediateFile {
 	List <String> mnemonics;

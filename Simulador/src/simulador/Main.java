@@ -8,7 +8,7 @@ import javax.swing.table.DefaultTableModel;
 import simulador.assembler.Assembler;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.Operations;
-import simulador.linker.Loader;
+import simulador.loader.Loader;
 
 public class Main {
 	static Memory vmMemory;

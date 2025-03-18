@@ -1,4 +1,4 @@
-package simulador.linker;
+package simulador.loader;
 
 import java.io.BufferedReader;
 import java.io.File;
