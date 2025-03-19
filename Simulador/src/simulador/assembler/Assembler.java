@@ -172,7 +172,7 @@ public class Assembler {
 			// Verify for other Labels
 			if (ignoreLine == false) {
 				boolean extended;
-				if( controlData.hasLabel ) { 
+				if( controlData.hasLabelAtStart ) { 
 					if (SYMTAB.contains( controlData.label )) { 
 						if (SYMTAB.isExtern( controlData.label )) {
 							SYMTAB.modify( controlData.label, this.LOCCTR, true);
@@ -184,8 +184,7 @@ public class Assembler {
 					extended = verifyOpcode (controlData.opcode, controlData.isDirective);
 					updateLOCCTR(controlData.opcode, mColumns[2], controlData.isInstruction, extended);	
 					mColumns = this.eraseLabel(mColumns); 			// Remove o Label do código texto, Montador conhece ele pela tabela de símbolos
-				}
-				else { 	
+				} else { 	
 					extended = verifyOpcode (controlData.opcode, controlData.isDirective);
 					updateLOCCTR(controlData.opcode, mColumns[1], controlData.isInstruction, extended);
 				}
@@ -203,8 +202,8 @@ public class Assembler {
 	
 	
 	public void processInstruction (String[] mnemonics, ControlData controlData) {
-		controlData.hasLabel = this.isLabel(mnemonics[0]);
-		if (controlData.hasLabel) {
+		controlData.hasLabelAtStart = this.isLabel(mnemonics[0]);
+		if (controlData.hasLabelAtStart) {
 			controlData.label 	= mnemonics[0];
 			controlData.opcode 	= mnemonics[1];
 			if (mnemonics.length == 3)
@@ -255,7 +254,7 @@ public class Assembler {
 					this.LOCCTR += 3;
 			} 
 			else
-				this.LOCCTR = Integer.parseInt(SicXeReservedWords.getInstructionFormat(opcode));
+				this.LOCCTR += Integer.parseInt(SicXeReservedWords.getInstructionFormat(opcode));
 		}
 		else if (opcode.equals("WORD"))
 			this.LOCCTR +=3;
@@ -442,10 +441,12 @@ public class Assembler {
 		Map<Integer, String> info = vmInstructions.getInfo(sOpcode);
 		opcode = (int) info.keySet().toArray()[0];
 		format = info.get(opcode);
-		if (format.equals("3/4") && extended)
-			format = "4";
-		else
-			format = "3";
+		if (format.equals("3/4")) {
+			if (extended)
+				format = "4";
+			else
+				format = "3";
+		}
 		integerFormat = Integer.parseInt(format);
 		binaryInstruction = new UserInstruction(integerFormat);
 		binaryInstruction.setOpcode(opcode);
@@ -453,11 +454,10 @@ public class Assembler {
 		
 		
 		if (integerFormat == 2) {
-			int firstRegIndex = vmRegisters.getRegisterValue(operandA);
-			int secondRegIndex = vmRegisters.getRegisterValue(operandB);
+			int firstRegIndex = vmRegisters.getRegisterIndex(operandA);
+			int secondRegIndex = vmRegisters.getRegisterIndex(operandB);
 			binaryInstruction.setRegisters(firstRegIndex, secondRegIndex);
-		}
-		else { // Desconsidera Existência de instruções tipo 1
+		} else { // Desconsidera Existência de instruções tipo 1
 			
 			int address = 0;
 			Character complement = null;
@@ -598,7 +598,7 @@ class ControlData {
 	String label;
 	String opcode;
 	String operandA;
-	boolean hasLabel;
+	boolean hasLabelAtStart;
 	boolean isDirective;
 	boolean isInstruction;
 }
