@@ -1,11 +1,21 @@
 package simulador;
 
+
+import java.util.ArrayList;
+import java.util.List;
+
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.UserInstruction;
+
+class AllocRecord {
+	int[] bounds = new int[2];
+	int size;
+}
 
 public class Memory {
     private byte[] memory;
     private int size;
+    List<AllocRecord> allocatedSpots;
     
 
     public Memory(int size) {
@@ -16,6 +26,7 @@ public class Memory {
         }
         this.size = size;
         memory = new byte[size];
+        allocatedSpots = new ArrayList<AllocRecord>();
     }
 
     // Leitura de palavras de 24 bits
@@ -52,6 +63,7 @@ public class Memory {
         }
     	memory[address + b] = (byte) (value & 0xFF);
     }
+   
     
     public int getMemorySize () {
     	return this.size;
@@ -80,9 +92,6 @@ public class Memory {
     }
     
     
-    
-    
-    
     /*
     =======================
     isEmpty
@@ -105,4 +114,49 @@ public class Memory {
     		return true;
     	return false;
     }
+    
+    public int alloc (int size) {
+    	Integer startAddress = 0;
+    	
+    	if (allocatedSpots.size()>0) {
+    		boolean found = false;
+    		int index = 0;
+    		while (!found) {
+    			AllocRecord rec = allocatedSpots.get(index);
+    			int add = startAddress;
+    			boolean inMidle = add+size >= rec.bounds[0] || (add+size >= rec.bounds[1] && add < rec.bounds[1]); 
+    			if ( inMidle) {
+    				startAddress = rec.bounds[1]+1;
+    			} else {
+    				found = true;
+    			}
+    		}
+    		AllocRecord newRec = new AllocRecord();
+    		newRec.bounds[0] = startAddress;
+    		newRec.bounds[1] = startAddress + size;
+    		newRec.size = size;
+    		allocatedSpots.add(newRec);
+    	} else
+    		startAddress = 0;
+    	
+    	return startAddress;
+    }
+
+	public void update(int address, int bytes, int relocValue) {
+		if (address < 0 || address + bytes >= memory.length)
+    		throw new IndexOutOfBoundsException("Endereço inválido.");
+    	int value = 0;
+    	for ( int i=0; i<bytes; i++ ) {
+    		value <<= 8;
+    		value += (int) memory[address+i] & 0xFF;
+    	}
+    	
+    	value += relocValue;
+    	
+    	for ( int i=bytes-1; i>=0; i-- ) {
+    		memory[address+i] = (byte) (value & 0xFF);
+    		value >>=8;
+    	}
+    	
+	}
 }

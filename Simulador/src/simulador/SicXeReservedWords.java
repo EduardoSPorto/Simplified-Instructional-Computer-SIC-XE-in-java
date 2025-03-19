@@ -12,9 +12,9 @@ public class SicXeReservedWords {
 	private static HashSet<Character> symbols;
 	
 	static{
-		instructions = new 	HashMap<>();
-		directives = new HashSet<String>();
-		symbols = new HashSet <Character> ();
+		instructions 	= new HashMap <>();
+		directives 		= new HashSet <String>();
+		symbols 		= new HashSet <Character> ();
 		
 		// Instruções
 		// Adiciona as instruções ao HashMap
@@ -65,6 +65,8 @@ public class SicXeReservedWords {
 		directives.add("WORD");
 		directives.add("RESB");
 		directives.add("RESW");
+		directives.add("EXTDEF");
+		directives.add("EXTREF");
 		
 		//Simbolos
 		symbols.add('.');
@@ -72,6 +74,7 @@ public class SicXeReservedWords {
 		symbols.add(',');
 		symbols.add('@');
 		symbols.add('#');
+		
 	}
 	
 	
@@ -102,6 +105,4 @@ public class SicXeReservedWords {
 	public static String getInstructionFormat (String token) {
 		return instructions.get(token)[1];
 	}
-	
-	
 }

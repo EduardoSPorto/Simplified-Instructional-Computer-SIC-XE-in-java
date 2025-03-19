@@ -1,34 +1,42 @@
 package simulador;
 
+import java.io.IOException;
+
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import simulador.assembler.Assembler;
-import simulador.assembler.MacroProcessor;
-import simulador.assembler.MacroProcessorTest;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.Operations;
+import simulador.loader.Loader;
 
 public class Main {
-	
+	static Memory vmMemory;
+	static Registers vmRegisters;
+	static Operations vmOperations; 
+	static InstructionSet vmInstructionSet; 
+	static Assembler assembler;
+	static Loader loader;
+	static VMSimulator vmSimulator;
 	
 	/*
 	=======================
 	main
 	======================
 	 */
-    public static void main(String[] args) {
-        Memory vmMemory = new Memory(1025);
-        Registers vmRegisters = new Registers();
-        Operations vmOperations = new Operations(vmMemory, vmRegisters);
-        InstructionSet vmInstructionSet = new InstructionSet(vmOperations);
+    public static void main(String[] args) throws IOException {
+        vmMemory = new Memory(1025);
+        vmRegisters = new Registers();
+        vmOperations = new Operations(vmMemory, vmRegisters);
+        vmInstructionSet = new InstructionSet(vmOperations);
+        vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
+        loader = new Loader (vmMemory, vmSimulator);
+        assembler = new Assembler(vmMemory, vmInstructionSet, vmRegisters, loader);
         
-        String[] input = {"PROG START","ONE WORD 1", "ZERO WORD 0", "BYTE C'ola'", "LDA ZERO", "ADD ONE", "END"};
-        Assembler assembler = new Assembler(input, vmMemory, vmInstructionSet, vmRegisters);
-//        VMSimulator vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
-        // Teste do macro
-        MacroProcessorTest.main(args);        
-//        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
+        assembler.execute();
+        
+        System.out.println("Saiu");
+        SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
     }
     
     
@@ -66,6 +74,7 @@ public class Main {
         int memorySize = vmMemory.getMemorySize();
         for (int addr = 0; addr <= memorySize - 3; addr += 3) {
             try {
+            	
                 int wordValue = vmMemory.readWord(addr);
                 memoryModel.addRow(new Object[]{
                     String.format("0x%04X", addr),
@@ -87,5 +96,5 @@ public class Main {
         
         frame.add(splitPane);
         frame.setVisible(true);
-    }    
+    }
 }
