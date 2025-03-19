@@ -78,6 +78,7 @@ public class Loader {
 				TSG.put(symbol.trim(), updatedAddress);
 				}	
 			}
+			// Updating LinkedObjectCode
 			while (line.charAt(0) != 'E') {
 				// Atualiza os endereços para segmentos 2,3,... Relocação  (Referência Externa é resolvida na segunda passagem)
 				if (line.charAt(0) == 'T') {
@@ -104,6 +105,7 @@ public class Loader {
 		String hexAddress 	= line.substring(1,7);
 		String chars  		= line.substring(7, 9);
 		String opcode 		= line.substring(9);
+
 		
 		String updatedHexAddress = Integer.toHexString( Integer.parseInt(hexAddress,16) + this.programSize );
 		updatedHexAddress = DataUtils.to6BitsAdressingFormat(updatedHexAddress, true);
@@ -177,7 +179,8 @@ public class Loader {
 			int size =  objectCode.length()/2 ;
 			byte[] instruction = new byte[size];
 			for ( int i=0, j = 0; j<size; i+=2, j++) {
-				instruction[j] = Byte.valueOf(objectCode.substring(i,i+2), 16);
+				int unsigned = Integer.parseInt(objectCode.substring(i, i+2), 16);
+				instruction[j] = (byte) unsigned; //Can result in Overflow
 			}
 			this.vmMemory.writeInstruction(address, instruction, size);
 
@@ -202,7 +205,8 @@ public class Loader {
 		int size =  objectCode.length()/2 ;
 		byte[] instruction = new byte[size];
 		for ( int i=0, j = 0; j<size; i+=2, j++) {
-			instruction[j] = Byte.valueOf(objectCode.substring(i,i+2), 16);
+			int unsigned = Integer.parseInt(objectCode.substring(i, i+2), 16);
+			instruction[j] = (byte) unsigned; //Can result in Overflow
 		}
 		this.vmMemory.writeInstruction(address, instruction, size);
 		if (isInstruction)

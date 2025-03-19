@@ -8,12 +8,46 @@ public class MacroProcessor {
     // Tabela de definições de macro: mnemônico da macro -> definição
     private Map<String, MacroDefinition> macroTable = new HashMap<>();
 
-    
+
+     //Processa todos os arquivos de entrada encontrados em 'inputPath'
+     //Se 'inputPath' for um diretório, ele lê todos os arquivos com extensão .asm
+     // Se for um arquivo, processa apenas esse arquivo
+     
+     // Cada arquivo de entrada gera um arquivo de saída único na pasta "AssemblyCodes"
+     
+    public void processFiles(String inputPath) throws IOException {
+        List<String> inputFilePaths = new ArrayList<>();
+        File inFile = new File(inputPath);
+
+        if (inFile.isDirectory()) {
+            // Caso o input seja um diretório, pega todos os arquivos .asm
+            File[] files = inFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".asm"));
+            if (files != null) {
+                for (File file : files) {
+                    inputFilePaths.add(file.getAbsolutePath());
+                }
+            }
+        } else {
+            // Input é um arquivo único
+            inputFilePaths.add(inputPath);
+        }
+
+        // Processa cada arquivo individualmente
+        for (String filePath : inputFilePaths) {
+            processFile(filePath);
+        }
+    }
+
      // Processa o arquivo fonte, realizando a expansão das macros e
-     // gerando o arquivo de saída MASMAPRG.ASM.
-     //   Primeiro coleta todas as definições de macro.
-     //   Depois Expande as chamadas de macro no restante do código.
+     // gerando um arquivo de saída com nome único na pasta AssemblyCodes
+     // Essa implementação realiza duas passagens:
+     //   	Coleta todas as definições de macro.
+     //   	Expande as chamadas de macro no restante do código.
+       
     public void processFile(String inputFilePath) throws IOException {
+        // Reinicia a tabela de macros para cada arquivo
+        macroTable = new HashMap<>();
+
         // Lê todas as linhas do arquivo fonte
         List<String> allLines = new ArrayList<>();
         try (BufferedReader reader = new BufferedReader(new FileReader(inputFilePath))) {
@@ -23,7 +57,7 @@ public class MacroProcessor {
             }
         }
 
-        // Primeira passagem: Coleta todas as definições de macro
+        // Primeira passagem: coleta todas as definições de macro e constrói lista de linhas sem as definições
         List<String> nonMacroLines = new ArrayList<>();
         for (int i = 0; i < allLines.size(); i++) {
             String line = allLines.get(i).trim();
@@ -41,8 +75,7 @@ public class MacroProcessor {
             }
         }
 
-        // Segunda passagem
-        // Expande chamadas de macro nas linhas restantes
+        // Segunda passagem: expande chamadas de macro nas linhas restantes
         List<String> outputLines = new ArrayList<>();
         for (String line : nonMacroLines) {
             String[] tokens = line.split("\\s+");
@@ -56,18 +89,35 @@ public class MacroProcessor {
             }
         }
 
-        // Grava o arquivo de saída com o nome MASMAPRG.ASM
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("MASMAPRG.ASM"))) {
+        // Gera o diretório de saída "AssemblyCodes"
+        File outputDir = new File("AssemblyCodes");
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+        // Gera um nome único para o arquivo de saída (MASMAPRG0.ASM, MASMAPRG1.ASM, ...)
+        String baseName = "MASMAPRG";
+        String extension = ".ASM";
+        int counter = 0;
+        File outputFile = new File(outputDir, baseName + counter + extension);
+        while (outputFile.exists()) {
+            counter++;
+            outputFile = new File(outputDir, baseName + counter + extension);
+        }
+
+        // Grava o arquivo de saída
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputFile))) {
             for (String outLine : outputLines) {
                 writer.write(outLine);
                 writer.newLine();
             }
         }
+        System.out.println("Arquivo processado: " + inputFilePath);
+        System.out.println("Saída gerada: " + outputFile.getAbsolutePath());
     }
 
-     // Lê uma definição de macro a partir da lista de linhas.
-     // Retorna a MacroDefinition e registra o índice da linha final (onde ocorre "MEND").
-    
+     // Lê uma definição de macro a partir da lista de linhas
+     // Retorna a MacroDefinition e registra o índice da linha final (onde ocorre "MEND")
+     //
     private MacroDefinition parseMacroDefinitionFromList(List<String> lines, int startIndex) {
         String headerLine = lines.get(startIndex).trim();
         String[] tokens = headerLine.split("\\s+");
@@ -75,7 +125,6 @@ public class MacroProcessor {
         List<String> parameters = new ArrayList<>();
 
         if (tokens.length > 2 && tokens[1].equalsIgnoreCase("MACRO")) {
-            // Junta os tokens a partir do índice 2 para formar os parâmetros
             StringBuilder paramsBuilder = new StringBuilder();
             for (int i = 2; i < tokens.length; i++) {
                 paramsBuilder.append(tokens[i]).append(" ");
@@ -91,7 +140,6 @@ public class MacroProcessor {
 
         List<String> body = new ArrayList<>();
         int endIndex = startIndex;
-        // Lê as linhas do corpo da macro até encontrar "MEND"
         for (int i = startIndex + 1; i < lines.size(); i++) {
             String line = lines.get(i).trim();
             if (line.equalsIgnoreCase("MEND")) {
@@ -104,7 +152,7 @@ public class MacroProcessor {
         macro.setEndLineIndex(endIndex);
         return macro;
     }
-
+    
      // Expande uma chamada de macro substituindo os parâmetros formais
      // pelos argumentos reais fornecidos na chamada.
      
@@ -122,7 +170,6 @@ public class MacroProcessor {
             }
         }
 
-        // Substitui os parâmetros na macro pelo argumento correspondente
         StringBuilder expanded = new StringBuilder();
         for (String bodyLine : macro.getBody()) {
             String expandedLine = bodyLine;
@@ -137,6 +184,8 @@ public class MacroProcessor {
     }
 }
 
+ // Classe auxiliar que representa a definição de uma macro.
+ 
 class MacroDefinition {
     private String name;
     private List<String> parameters;
@@ -169,4 +218,3 @@ class MacroDefinition {
         this.endLineIndex = endLineIndex;
     }
 }
-
