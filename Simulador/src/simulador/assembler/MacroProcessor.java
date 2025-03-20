@@ -23,6 +23,7 @@ public class MacroProcessor {
             // Caso o input seja um diretório, pega todos os arquivos .asm
             File[] files = inFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".asm"));
             if (files != null) {
+                Arrays.sort(files, Comparator.comparing(File::getName));
                 for (File file : files) {
                     inputFilePaths.add(file.getAbsolutePath());
                 }
