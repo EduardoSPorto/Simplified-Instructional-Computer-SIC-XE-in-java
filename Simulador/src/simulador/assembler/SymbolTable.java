@@ -3,10 +3,6 @@ package simulador.assembler;
 import java.util.HashMap;
 import java.util.Map;
 
-class SymbolData {
-	String Address;
-	boolean extern;
-}
 
 public class SymbolTable {
 	
@@ -61,4 +57,8 @@ public class SymbolTable {
 }
 
 
+class SymbolData {
+	String Address;
+	boolean extern;
+}
 

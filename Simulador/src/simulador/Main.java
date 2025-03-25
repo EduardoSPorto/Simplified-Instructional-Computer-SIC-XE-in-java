@@ -1,11 +1,13 @@
 package simulador;
 
+import java.io.File;
 import java.io.IOException;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 
 import simulador.assembler.Assembler;
+import simulador.assembler.MacroProcessor;
 import simulador.instrucao.InstructionSet;
 import simulador.instrucao.Operations;
 import simulador.loader.Loader;
@@ -18,6 +20,7 @@ public class Main {
 	static Assembler assembler;
 	static Loader loader;
 	static VMSimulator vmSimulator;
+	static MacroProcessor macroProcessor;
 	
 	/*
 	=======================
@@ -32,7 +35,9 @@ public class Main {
         vmSimulator = new VMSimulator(vmMemory, vmRegisters, vmInstructionSet);
         loader = new Loader (vmMemory, vmSimulator);
         assembler = new Assembler(vmMemory, vmInstructionSet, vmRegisters, loader);
+        macroProcessor = new MacroProcessor();
         
+//        macroProcessor.processFiles("EntradaMacros"+File.separator);
         assembler.execute();
         
         System.out.println("Saiu");

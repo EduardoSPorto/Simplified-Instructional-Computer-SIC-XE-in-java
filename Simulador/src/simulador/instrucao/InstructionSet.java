@@ -85,7 +85,7 @@ public class InstructionSet {
 //	Executa qualquer uma das intruções através do Opcode
 //	As instruções não tem parâmetros pq são definidas pelo contexto da máquina, cada instruçã deve interpretar o contexto.
 	public void execute (UserInstruction currentInstruction) {
-		int opcode = currentInstruction.getOpcode();
+		int opcode = currentInstruction.getOpcode() & 0xFF;
 		for (int i = 0; i < instructionSet.size(); i ++) {
 			VMInstruction instruction = instructionSet.get(i);
 			if (instruction.getOpcode() == opcode) {

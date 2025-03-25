@@ -22,11 +22,6 @@ import simulador.instrucao.UserInstruction;
 import simulador.instrucao.VMInstruction;
 import simulador.loader.Loader;
 
-class IntermediateFile {
-	List <String> mnemonics;
-	List <String> DefSymbols;
-	List <String> RefSymbols;
-}
 
 
 public class Assembler {
@@ -603,4 +598,8 @@ class ControlData {
 	boolean isInstruction;
 }
 
-
+class IntermediateFile {
+	List <String> mnemonics;
+	List <String> DefSymbols;
+	List <String> RefSymbols;
+}

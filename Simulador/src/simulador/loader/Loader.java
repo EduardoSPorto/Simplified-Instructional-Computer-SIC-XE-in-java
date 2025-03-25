@@ -213,27 +213,31 @@ public class Loader {
 			lastInstructionAddress = updateExecAddresses(lastInstructionAddress, address);
 		updateExecAddresses(lastInstructionAddress, -1); 
 		
-		// Update in memory the needed modifications
-		for (int i = 0; i <=  linkedObjCode.ModificationRecord.size(); i++) {	//Aqui foi usado for pq todas iterações são iguais, e o teste é mais intuitivo
-			line = linkedObjCode.ModificationRecord.removeFirst();
-			String hexAddress = line.substring(1,7);						//Actual memory Position
-			String halfBytes = line.substring(7,9);
-			int bytes = halfBytes.equals("03")? 2 : 3;
-			char modFlag = line.charAt(9);
-			
-			String extSymbol = line.substring(10);
-			int symbolAddress = TSG.get(extSymbol) ; 	// Only for relocation
-			symbolAddress += this.ipla;
-			if (modFlag == '-')
-				symbolAddress *= -1;
-			
-			this.vmMemory.update(Integer.parseInt(hexAddress,16), bytes, symbolAddress);
-			
-			if (linkedObjCode.Text.isEmpty() == false)
-				line = linkedObjCode.Text.removeFirst();
-			else 
-				line = linkedObjCode.END;
+		int modRecordsSize = linkedObjCode.ModificationRecord.size();
+		if (modRecordsSize != 0) {
+			// Update in memory the needed modifications
+			for (int i = 0; i <=  linkedObjCode.ModificationRecord.size(); i++) {	//Aqui foi usado for pq todas iterações são iguais, e o teste é mais intuitivo
+				line = linkedObjCode.ModificationRecord.removeFirst();
+				String hexAddress = line.substring(1,7);						//Actual memory Position
+				String halfBytes = line.substring(7,9);
+				int bytes = halfBytes.equals("03")? 2 : 3;
+				char modFlag = line.charAt(9);
+				
+				String extSymbol = line.substring(10);
+				int symbolAddress = TSG.get(extSymbol) ; 	// Only for relocation
+				symbolAddress += this.ipla;
+				if (modFlag == '-')
+					symbolAddress *= -1;
+				
+				this.vmMemory.update(Integer.parseInt(hexAddress,16), bytes, symbolAddress);
+				
+				if (linkedObjCode.Text.isEmpty() == false)
+					line = linkedObjCode.Text.removeFirst();
+				else 
+					line = linkedObjCode.END;
+			}
 		}
+		
 	
 		vmSimulator.operate(execStartPoint, this.execAddresses);
 		

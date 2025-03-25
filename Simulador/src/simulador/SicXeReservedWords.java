@@ -67,6 +67,10 @@ public class SicXeReservedWords {
 		directives.add("RESW");
 		directives.add("EXTDEF");
 		directives.add("EXTREF");
+		directives.add("EXTDEF");
+		directives.add("EXTREF");
+		directives.add("MACRO");
+		directives.add("MEND");
 		
 		//Simbolos
 		symbols.add('.');

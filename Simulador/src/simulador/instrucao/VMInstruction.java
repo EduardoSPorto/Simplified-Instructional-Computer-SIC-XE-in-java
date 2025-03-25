@@ -19,7 +19,7 @@ public class VMInstruction {
 
 
 	public int getOpcode() {
-		return opcode;
+		return opcode & 0xFF;
 	}
 
 	public String getMnemonic() {

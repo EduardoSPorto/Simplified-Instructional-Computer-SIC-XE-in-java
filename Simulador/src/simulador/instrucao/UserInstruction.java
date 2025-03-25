@@ -104,7 +104,8 @@ public class UserInstruction {
 	
 	public int[] getRegisters () {
 		int [] registers = new int[2];
-		registers[0] = this.instruction[1] & 0xF0;
+		int regs =  (this.instruction[1] & 0xFF);
+		registers[0] = (this.instruction[1] >> 4) & 0x0F;
 		registers[1] = this.instruction[1] & 0x0F;
 		return registers;
 	}
