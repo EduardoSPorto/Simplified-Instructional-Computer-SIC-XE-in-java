@@ -256,10 +256,10 @@ public class Loader {
 	public void cleanFiles () {
 		File dir = new File ("AssemblyCodes");
 //		
-//		for (File file : dir.listFiles()){
-//			if (file.isFile())
-//				file.delete();
-//		}
+		for (File file : dir.listFiles()){
+			if (file.isFile())
+				file.delete();
+		}
 		
 		dir = new File ("ObjectProgs");
 		

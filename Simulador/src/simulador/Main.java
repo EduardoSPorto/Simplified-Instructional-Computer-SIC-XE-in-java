@@ -28,7 +28,16 @@ public class Main {
 	======================
 	 */
     public static void main(String[] args) throws IOException {
-        vmMemory = new Memory(1025);
+        File dir = new File("AssemblyCodes/");
+        if (dir.exists() == false) 
+        	dir.mkdir();
+         
+        dir = new File ("ObjectProgs/");
+        if (dir.exists() == false)
+        	dir.mkdir();
+        
+    	
+    	vmMemory = new Memory(1025);
         vmRegisters = new Registers();
         vmOperations = new Operations(vmMemory, vmRegisters);
         vmInstructionSet = new InstructionSet(vmOperations);
@@ -37,10 +46,9 @@ public class Main {
         assembler = new Assembler(vmMemory, vmInstructionSet, vmRegisters, loader);
         macroProcessor = new MacroProcessor();
         
-//        macroProcessor.processFiles("EntradaMacros"+File.separator);
+        macroProcessor.processFiles("EntradaMacros"+File.separator);
         assembler.execute();
         
-        System.out.println("Saiu");
         SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
     }
     

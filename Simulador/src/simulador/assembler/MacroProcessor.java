@@ -21,7 +21,10 @@ public class MacroProcessor {
 
         if (inFile.isDirectory()) {
             // Caso o input seja um diretório, pega todos os arquivos .asm
+        	
             File[] files = inFile.listFiles((dir, name) -> name.toLowerCase().endsWith(".asm"));
+            Arrays.sort(files);
+            
             if (files != null) {
                 for (File file : files) {
                     inputFilePaths.add(file.getAbsolutePath());
@@ -182,6 +185,8 @@ public class MacroProcessor {
         }
         return expanded.toString().trim();
     }
+    
+    
 }
 
  // Classe auxiliar que representa a definição de uma macro.
@@ -218,3 +223,7 @@ class MacroDefinition {
         this.endLineIndex = endLineIndex;
     }
 }
+
+
+
+
