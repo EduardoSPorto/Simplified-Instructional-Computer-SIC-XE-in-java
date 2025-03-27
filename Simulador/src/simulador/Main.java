@@ -53,9 +53,31 @@ public class Main {
         assembler.execute();
         
         SwingUtilities.invokeLater(() -> createAndShowGUI(vmRegisters, vmMemory));
+        cleanRoot();
+        
     }
     
     
+    
+    /*
+     ============================
+     cleanRoot
+     ===========================
+     */
+    private static void cleanRoot () {
+    	File dir = new File ("AssemblyCodes");
+		for (File file : dir.listFiles()){
+			if (file.isFile())
+				file.delete();
+		}
+		dir.delete();
+		dir = new File ("ObjectProgs");
+		for (File file : dir.listFiles()){
+			if (file.isFile())
+				file.delete();
+		}
+		dir.delete();
+    }
     
     
     /*

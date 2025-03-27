@@ -96,7 +96,6 @@ public class Loader {
 		}
 		
 		this.ipla = this.vmMemory.alloc(programSize);
-		this.cleanFiles();
 		this.secondPass();
 	}
 	
@@ -252,22 +251,6 @@ public class Loader {
 		}
 	}
 	
-	
-	public void cleanFiles () {
-		File dir = new File ("AssemblyCodes");
-//		
-		for (File file : dir.listFiles()){
-			if (file.isFile())
-				file.delete();
-		}
-		
-		dir = new File ("ObjectProgs");
-		
-		for (File file : dir.listFiles()){
-			if (file.isFile())
-				file.delete();
-		}
-	}
 }
 
 
